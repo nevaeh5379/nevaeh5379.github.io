@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{user}} & {{char}} 변환기</title>
+    <meta name="description" content="텍스트에서 {{user}}와 {{char}}를 원하는 단어로 쉽게 변환하세요.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔄 {{user}} & {{char}} 변환기</h1>
+            <p class="subtitle">텍스트의 태그를 원하는 단어로 변환하세요</p>
+        </header>
+
+        <main>
+            <section class="replacement-controls">
+                <div class="input-group">
+                    <label for="user-replacement">
+                        <span class="tag">{{user}}</span> 바꿀 단어
+                    </label>
+                    <input type="text" id="user-replacement" placeholder="예: 민수">
+                </div>
+                <div class="input-group">
+                    <label for="char-replacement">
+                        <span class="tag">{{char}}</span> 바꿀 단어
+                    </label>
+                    <input type="text" id="char-replacement" placeholder="예: AI 어시스턴트">
+                </div>
+            </section>
+
+            <section class="text-areas">
+                <div class="textarea-container">
+                    <label for="input-text">입력</label>
+                    <textarea id="input-text" placeholder="여기에 변환할 텍스트를 입력하세요...&#10;&#10;예: {{user}}님, 안녕하세요! 저는 {{char}}입니다."></textarea>
+                    <div class="textarea-actions">
+                        <button class="btn-secondary" id="clear-input">
+                            <span class="icon">🗑️</span> 지우기
+                        </button>
+                        <button class="btn-secondary" id="paste-input">
+                            <span class="icon">📋</span> 붙여넣기
+                        </button>
+                    </div>
+                </div>
+
+                <div class="arrow-container">
+                    <div class="arrow">→</div>
+                </div>
+
+                <div class="textarea-container">
+                    <label for="output-text">출력</label>
+                    <textarea id="output-text" readonly placeholder="변환된 텍스트가 여기에 표시됩니다..."></textarea>
+                    <div class="textarea-actions">
+                        <button class="btn-primary" id="copy-output">
+                            <span class="icon">📑</span> 복사하기
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <div class="toast" id="toast"></div>
+        </main>
+
+        <footer>
+            <p><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">존1나 위험한 버튼</a></p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
