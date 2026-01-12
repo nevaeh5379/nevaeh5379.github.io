@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Translator - AI 기반 번역기</title>
+    <meta name="description" content="다양한 LLM을 활용한 고품질 AI 번역기">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <span class="logo-icon">🌐</span>
+                <span class="logo-text">LLM Translator</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="header-btn" id="historyBtn" title="번역 기록">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12,6 12,12 16,14"/>
+                </svg>
+            </button>
+            <button class="header-btn" id="settingsBtn" title="설정">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+                </svg>
+            </button>
+            <button class="header-btn" id="themeBtn" title="테마 변경">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="sun-icon">
+                    <circle cx="12" cy="12" r="5"/>
+                    <line x1="12" y1="1" x2="12" y2="3"/>
+                    <line x1="12" y1="21" x2="12" y2="23"/>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                    <line x1="1" y1="12" x2="3" y2="12"/>
+                    <line x1="21" y1="12" x2="23" y2="12"/>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="moon-icon" style="display: none;">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Provider Selection -->
+        <div class="provider-bar">
+            <div class="provider-select-group">
+                <label for="providerSelect">Provider</label>
+                <select id="providerSelect" class="select-input">
+                    <option value="openai">OpenAI</option>
+                    <option value="claude">Claude</option>
+                    <option value="gemini">Gemini</option>
+                    <option value="ollama">Ollama</option>
+                    <option value="llamacpp">llama.cpp</option>
+                    <!-- Custom endpoints will be added dynamically -->
+                </select>
+            </div>
+            <div class="provider-select-group">
+                <label for="modelSelect">Model</label>
+                <div class="model-select-wrapper">
+                    <select id="modelSelect" class="select-input">
+                        <option value="gpt-4o">gpt-4o</option>
+                        <option value="gpt-4o-mini">gpt-4o-mini</option>
+                        <option value="gpt-4-turbo">gpt-4-turbo</option>
+                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                    </select>
+                    <button class="refresh-btn" id="refreshModelsBtn" title="모델 목록 새로고침">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23,4 23,10 17,10"/>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Language Selection -->
+        <div class="language-bar">
+            <div class="language-select-wrapper">
+                <select id="sourceLang" class="language-select">
+                    <option value="auto">언어 감지</option>
+                    <option value="ko">한국어</option>
+                    <option value="en">English</option>
+                    <option value="ja">日本語</option>
+                    <option value="zh">中文</option>
+                    <option value="es">Español</option>
+                    <option value="fr">Français</option>
+                    <option value="de">Deutsch</option>
+                    <option value="ru">Русский</option>
+                    <option value="pt">Português</option>
+                    <option value="it">Italiano</option>
+                    <option value="vi">Tiếng Việt</option>
+                    <option value="th">ไทย</option>
+                    <option value="id">Bahasa Indonesia</option>
+                    <option value="ar">العربية</option>
+                </select>
+            </div>
+            <button class="swap-btn" id="swapLangBtn" title="언어 교환">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12M17 20l4-4M17 20l-4-4"/>
+                </svg>
+            </button>
+            <div class="language-select-wrapper">
+                <select id="targetLang" class="language-select">
+                    <option value="en">English</option>
+                    <option value="ko">한국어</option>
+                    <option value="ja">日本語</option>
+                    <option value="zh">中文</option>
+                    <option value="es">Español</option>
+                    <option value="fr">Français</option>
+                    <option value="de">Deutsch</option>
+                    <option value="ru">Русский</option>
+                    <option value="pt">Português</option>
+                    <option value="it">Italiano</option>
+                    <option value="vi">Tiếng Việt</option>
+                    <option value="th">ไทย</option>
+                    <option value="id">Bahasa Indonesia</option>
+                    <option value="ar">العربية</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Translation Area -->
+        <div class="translation-container">
+            <div class="translation-box source-box">
+                <div class="box-header">
+                    <span class="detected-lang" id="detectedLang"></span>
+                    <button class="clear-btn" id="clearBtn" title="지우기">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <textarea id="sourceText" class="translation-textarea" placeholder="번역할 텍스트를 입력하세요..."></textarea>
+                <div class="box-footer">
+                    <div class="char-count">
+                        <span id="charCount">0</span> / 5000
+                    </div>
+                    <div class="box-actions">
+                        <button class="action-btn" id="pasteBtn" title="붙여넣기">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="translation-box target-box">
+                <div class="box-header">
+                    <span class="translation-status" id="translationStatus"></span>
+                </div>
+                <div id="targetText" class="translation-output" contenteditable="false"></div>
+                <div class="box-footer">
+                    <div class="box-actions">
+                        <button class="action-btn" id="copyBtn" title="복사">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                        </button>
+                        <button class="action-btn" id="saveHistoryBtn" title="기록 저장">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reasoning Log Panel -->
+        <div class="reasoning-panel" id="reasoningPanel" style="display: none;">
+            <div class="reasoning-header">
+                <button class="reasoning-toggle" id="reasoningToggle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="toggle-icon">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                    <span>🧠 AI 추론 과정</span>
+                    <span class="reasoning-badge" id="reasoningBadge">thinking...</span>
+                </button>
+            </div>
+            <div class="reasoning-content" id="reasoningContent">
+                <pre id="reasoningText"></pre>
+            </div>
+        </div>
+
+        <!-- Translate Button -->
+        <div class="translate-btn-container">
+            <button class="translate-btn" id="translateBtn">
+                <span class="btn-text">번역하기</span>
+                <span class="btn-loader" style="display: none;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spinner">
+                        <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="16"/>
+                    </svg>
+                </span>
+            </button>
+        </div>
+    </main>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>설정</h2>
+                <button class="modal-close" id="closeSettingsBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-tabs">
+                    <button class="tab-btn active" data-tab="api">API 설정</button>
+                    <button class="tab-btn" data-tab="prompt">프롬프트</button>
+                    <button class="tab-btn" data-tab="export">내보내기</button>
+                </div>
+
+                <!-- API Settings Tab -->
+                <div class="tab-content active" id="api-tab">
+                    <div class="settings-section">
+                        <h3>OpenAI</h3>
+                        <div class="input-group">
+                            <label for="openaiKey">API Key</label>
+                            <input type="password" id="openaiKey" class="text-input" placeholder="sk-...">
+                        </div>
+                        <div class="input-group">
+                            <label for="openaiBaseUrl">Base URL (선택)</label>
+                            <input type="text" id="openaiBaseUrl" class="text-input" placeholder="https://api.openai.com/v1">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Claude</h3>
+                        <div class="input-group">
+                            <label for="claudeKey">API Key</label>
+                            <input type="password" id="claudeKey" class="text-input" placeholder="sk-ant-...">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Gemini</h3>
+                        <div class="input-group">
+                            <label for="geminiKey">API Key</label>
+                            <input type="password" id="geminiKey" class="text-input" placeholder="AIza...">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Ollama</h3>
+                        <div class="input-group">
+                            <label for="ollamaUrl">Server URL</label>
+                            <input type="text" id="ollamaUrl" class="text-input" placeholder="http://localhost:11434">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>llama.cpp</h3>
+                        <div class="input-group">
+                            <label for="llamacppUrl">Server URL</label>
+                            <input type="text" id="llamacppUrl" class="text-input" placeholder="http://localhost:8080">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <div class="section-header">
+                            <h3>커스텀 엔드포인트</h3>
+                            <button class="btn-icon" id="addEndpointBtn" title="엔드포인트 추가">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="help-text">OpenAI 호환 API를 여러 개 추가할 수 있습니다.</p>
+                        <div id="customEndpointsList" class="custom-endpoints-list">
+                            <!-- Custom endpoints will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prompt Settings Tab -->
+                <div class="tab-content" id="prompt-tab">
+                    <div class="settings-section">
+                        <h3>커스텀 번역 프롬프트</h3>
+                        <p class="help-text">변수: {source_lang}, {target_lang}, {text}</p>
+                        <div class="input-group">
+                            <label for="systemPrompt">시스템 프롬프트</label>
+                            <textarea id="systemPrompt" class="text-input textarea-large" rows="4">You are a professional translator. Translate the given text accurately while preserving the original meaning and tone.</textarea>
+                        </div>
+                        <div class="input-group">
+                            <label for="userPrompt">사용자 프롬프트</label>
+                            <textarea id="userPrompt" class="text-input textarea-large" rows="4">Translate the following text from {source_lang} to {target_lang}. Only output the translation, nothing else.
+
+Text to translate:
+{text}</textarea>
+                        </div>
+                        <button class="btn-secondary" id="resetPromptBtn">기본값으로 복원</button>
+                    </div>
+                </div>
+
+                <!-- Export Settings Tab -->
+                <div class="tab-content" id="export-tab">
+                    <div class="settings-section">
+                        <h3>설정 내보내기/불러오기</h3>
+                        <p class="help-text">모든 설정을 JSON 파일로 저장하거나 불러올 수 있습니다.</p>
+                        <div class="export-buttons">
+                            <button class="btn-primary" id="exportSettingsBtn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7,10 12,15 17,10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                설정 내보내기
+                            </button>
+                            <label class="btn-secondary file-input-label">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17,8 12,3 7,8"/>
+                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                설정 불러오기
+                                <input type="file" id="importSettingsInput" accept=".json" hidden>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" id="saveSettingsBtn">설정 저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Sidebar -->
+    <div class="sidebar-overlay" id="historyOverlay"></div>
+    <aside class="sidebar" id="historySidebar">
+        <div class="sidebar-header">
+            <h2>번역 기록</h2>
+            <button class="sidebar-close" id="closeHistoryBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="sidebar-search">
+            <input type="text" id="historySearch" class="text-input" placeholder="기록 검색...">
+        </div>
+        <div class="sidebar-body" id="historyList">
+            <!-- History items will be loaded dynamically -->
+        </div>
+        <div class="sidebar-footer">
+            <button class="btn-danger" id="clearHistoryBtn">모든 기록 삭제</button>
+        </div>
+    </aside>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <span class="toast-message"></span>
+    </div>
+
+    <script src="providers.js"></script>
+    <script src="settings.js"></script>
+    <script src="history.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
