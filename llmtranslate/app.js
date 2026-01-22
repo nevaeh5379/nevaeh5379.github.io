@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
         providerSelect: document.getElementById('providerSelect'),
         modelSelect: document.getElementById('modelSelect'),
         refreshModelsBtn: document.getElementById('refreshModelsBtn'),
+        streamToggle: document.getElementById('streamToggle'),
 
         // Language
         sourceLang: document.getElementById('sourceLang'),
@@ -43,6 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
         settingsModal: document.getElementById('settingsModal'),
         closeSettingsBtn: document.getElementById('closeSettingsBtn'),
         saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+        enableAdvancedSettings: document.getElementById('enableAdvancedSettings'),
+        advancedSettingsContainer: document.getElementById('advancedSettingsContainer'),
         tabBtns: document.querySelectorAll('.tab-btn'),
         tabContents: document.querySelectorAll('.tab-content'),
 
@@ -53,8 +56,33 @@ document.addEventListener('DOMContentLoaded', () => {
         geminiKey: document.getElementById('geminiKey'),
         ollamaUrl: document.getElementById('ollamaUrl'),
         llamacppUrl: document.getElementById('llamacppUrl'),
+        translategemmaUrl: document.getElementById('translategemmaUrl'),
+
+
+        // Model Settings
+        openaiTemp: document.getElementById('openaiTemp'),
+        openaiTopP: document.getElementById('openaiTopP'),
+        openaiPres: document.getElementById('openaiPres'),
+        openaiFreq: document.getElementById('openaiFreq'),
         
-        // Custom Endpoints
+        claudeTemp: document.getElementById('claudeTemp'),
+        claudeTopP: document.getElementById('claudeTopP'),
+        claudeTopK: document.getElementById('claudeTopK'),
+        
+        geminiTemp: document.getElementById('geminiTemp'),
+        geminiTopP: document.getElementById('geminiTopP'),
+        geminiTopK: document.getElementById('geminiTopK'),
+        
+        ollamaTemp: document.getElementById('ollamaTemp'),
+        ollamaTopP: document.getElementById('ollamaTopP'),
+        ollamaTopK: document.getElementById('ollamaTopK'),
+        ollamaRepPen: document.getElementById('ollamaRepPen'),
+        
+        llamacppTemp: document.getElementById('llamacppTemp'),
+        llamacppTopP: document.getElementById('llamacppTopP'),
+        llamacppTopK: document.getElementById('llamacppTopK'),
+        llamacppRepPen: document.getElementById('llamacppRepPen'),
+
         addEndpointBtn: document.getElementById('addEndpointBtn'),
         customEndpointsList: document.getElementById('customEndpointsList'),
 
@@ -90,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isTranslating = false;
     let lastTranslation = null;
     let isFetchingModels = false;
+    let abortController = null;
 
     // ===========================================
     // Initialization
@@ -102,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.providerSelect.value = settings.get('provider');
         elements.sourceLang.value = settings.get('sourceLang');
         elements.targetLang.value = settings.get('targetLang');
+        elements.streamToggle.checked = settings.get('stream');
         
         setupEventListeners();
         renderHistory();
@@ -146,7 +176,8 @@ document.addEventListener('DOMContentLoaded', () => {
             { value: 'claude', label: 'Claude' },
             { value: 'gemini', label: 'Gemini' },
             { value: 'ollama', label: 'Ollama' },
-            { value: 'llamacpp', label: 'llama.cpp' }
+            { value: 'llamacpp', label: 'llama.cpp' },
+            { value: 'translategemma', label: 'TranslateGemma' }
         ];
         
         // Get custom endpoints
@@ -176,6 +207,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 option.textContent = ep.name || 'Custom API';
                 elements.providerSelect.appendChild(option);
             });
+        }
+
+        // Restore saved selection
+        const savedProvider = settings.get('provider');
+        if (savedProvider) {
+            elements.providerSelect.value = savedProvider;
         }
     }
 
@@ -247,7 +284,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (isTranslating) return;
+        if (isTranslating) {
+            if (abortController) {
+                abortController.abort();
+                abortController = null;
+                showToast('번역이 중단되었습니다.');
+                // Status update handled in catch block or finally
+            }
+            return;
+        }
+
+        abortController = new AbortController();
 
         const provider = elements.providerSelect.value;
         const model = elements.modelSelect.value;
@@ -277,49 +324,88 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const providerInstance = ProviderFactory.create(providerType, config);
+            const useStreaming = elements.streamToggle.checked;
             
-            // Use streaming translation
-            await providerInstance.translateStream(
-                text,
-                sourceLang,
-                targetLang,
-                systemPrompt,
-                userPrompt,
-                {
-                    onContent: (content) => {
-                        elements.targetText.textContent = content;
-                        elements.translationStatus.textContent = '스트리밍 중...';
+            if (useStreaming) {
+                // Use streaming translation
+                await providerInstance.translateStream(
+                    text,
+                    sourceLang,
+                    targetLang,
+                    systemPrompt,
+                    userPrompt,
+                    {
+                        onContent: (content) => {
+                            elements.targetText.textContent = content;
+                            elements.translationStatus.textContent = '스트리밍 중...';
+                        },
+                        onReasoning: (reasoning) => {
+                            updateReasoningPanel(reasoning);
+                        },
+                        onDone: (finalContent, reasoning) => {
+                            elements.targetText.textContent = finalContent;
+                            elements.translationStatus.textContent = '';
+                            finalizeReasoningPanel(reasoning);
+                            
+                            // Save for potential history save
+                            lastTranslation = {
+                                sourceLang,
+                                targetLang,
+                                sourceText: text,
+                                targetText: finalContent,
+                                provider,
+                                model
+                            };
+                        },
+                        onError: (error) => {
+                            if (error.name === 'AbortError') {
+                                return; // Handled in catch
+                            }
+                            console.error('Translation error:', error);
+                            elements.translationStatus.textContent = '';
+                            showToast(error.message);
+                        }
                     },
-                    onReasoning: (reasoning) => {
-                        updateReasoningPanel(reasoning);
-                    },
-                    onDone: (finalContent, reasoning) => {
-                        elements.targetText.textContent = finalContent;
-                        elements.translationStatus.textContent = '';
-                        finalizeReasoningPanel(reasoning);
-                        
-                        // Save for potential history save
-                        lastTranslation = {
-                            sourceLang,
-                            targetLang,
-                            sourceText: text,
-                            targetText: finalContent,
-                            provider,
-                            model
-                        };
-                    },
-                    onError: (error) => {
-                        console.error('Translation error:', error);
-                        elements.translationStatus.textContent = '';
-                        showToast(error.message);
-                    }
-                }
-            );
+                    { signal: abortController.signal }
+                );
+            } else {
+                // Non-streaming translation
+                elements.translationStatus.textContent = '번역 중...';
+                
+                const result = await providerInstance.translate(
+                    text,
+                    sourceLang,
+                    targetLang,
+                    systemPrompt,
+                    userPrompt,
+                    { signal: abortController.signal }
+                );
+
+                elements.targetText.textContent = result;
+                elements.translationStatus.textContent = '';
+                
+                // For non-streaming, we don't have separate reasoning content usually
+                // But we should reset the panel
+                resetReasoningPanel(false);
+
+                lastTranslation = {
+                    sourceLang,
+                    targetLang,
+                    sourceText: text,
+                    targetText: result,
+                    provider,
+                    model
+                };
+            }
 
         } catch (error) {
-            console.error('Translation error:', error);
-            elements.translationStatus.textContent = '';
-            showToast(error.message);
+            if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+                elements.translationStatus.textContent = '번역 중단됨';
+            } else {
+                console.error('Translation error:', error);
+                elements.translationStatus.textContent = '';
+                showToast(error.message);
+            }
         } finally {
             setTranslating(false);
         }
@@ -327,17 +413,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setTranslating(value) {
         isTranslating = value;
-        elements.translateBtn.disabled = value;
+        // Don't disable button, allow clicking to stop
+        // elements.translateBtn.disabled = value;
         
         const btnText = elements.translateBtn.querySelector('.btn-text');
         const btnLoader = elements.translateBtn.querySelector('.btn-loader');
+        const btnStop = elements.translateBtn.querySelector('.btn-stop');
         
         if (value) {
             btnText.style.display = 'none';
             btnLoader.style.display = 'block';
+            if (btnStop) btnStop.style.display = 'block'; // Or toggle between loader/stop?
+            // Design: Show STOP button instead of Loader+Text?
+            // Let's hide loader and show Stop button + text? 
+            // The original HTML structure has btn-loader and btn-text. 
+            // My new HTML has btn-stop too.
+            // Let's show btn-stop ONLY when translating.
+            btnLoader.style.display = 'block'; // Show spinner
+            btnStop.style.display = 'inline-flex'; // Show stop text/icon
+            // Hide "Translate" text
+            btnText.style.display = 'none';
+            
+            // Wait, if I show both loader and stop text, it might be crowded.
+            // Let's show Loader AND "Stop" text?
+            // Or just "Stop" with icon.
+            // Inspecting index.html again:
+            // <span class="btn-stop">...</span> <span class="btn-loader">...</span>
+            
+            // Clean approach:
+            // Idle: [Text: Translate]
+            // Translating: [Icon: Stop] [Text: Stop] (Spinner inside stop icon? No)
+            // Let's keep spinner and add Stop text.
+            
+            btnLoader.style.display = 'block';
+            if (btnStop) {
+               btnStop.style.display = 'inline-flex';
+            }
         } else {
             btnText.style.display = 'block';
             btnLoader.style.display = 'none';
+            if (btnStop) {
+               btnStop.style.display = 'none';
+            }
         }
     }
 
@@ -390,31 +507,151 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function loadSettingsToUI() {
+        const advancedEnabled = settings.get('enableAdvancedSettings');
+        if (elements.enableAdvancedSettings) {
+            elements.enableAdvancedSettings.checked = advancedEnabled;
+            toggleAdvancedSettingsUI(advancedEnabled);
+            
+            elements.enableAdvancedSettings.onchange = (e) => {
+                toggleAdvancedSettingsUI(e.target.checked);
+            };
+        }
+
         elements.openaiKey.value = settings.get('openai.apiKey') || '';
         elements.openaiBaseUrl.value = settings.get('openai.baseUrl') || '';
+        
+        elements.openaiTemp.value = settings.get('openai.temperature') || 1.0;
+        elements.openaiTopP.value = settings.get('openai.top_p') || 1.0;
+        elements.openaiPres.value = settings.get('openai.presence_penalty') || 0.0;
+        elements.openaiFreq.value = settings.get('openai.frequency_penalty') || 0.0;
+
         elements.claudeKey.value = settings.get('claude.apiKey') || '';
+        elements.claudeTemp.value = settings.get('claude.temperature') || 1.0;
+        elements.claudeTopP.value = settings.get('claude.top_p') || 1.0;
+        elements.claudeTopK.value = settings.get('claude.top_k') || 0;
+
         elements.geminiKey.value = settings.get('gemini.apiKey') || '';
+        elements.geminiTemp.value = settings.get('gemini.temperature') || 1.0;
+        elements.geminiTopP.value = settings.get('gemini.top_p') || 1.0;
+        elements.geminiTopK.value = settings.get('gemini.top_k') || 0;
+
         elements.ollamaUrl.value = settings.get('ollama.baseUrl') || 'http://localhost:11434';
+        elements.ollamaTemp.value = settings.get('ollama.temperature') || 0.8;
+        elements.ollamaTopP.value = settings.get('ollama.top_p') || 0.9;
+        elements.ollamaTopK.value = settings.get('ollama.top_k') || 40;
+        elements.ollamaRepPen.value = settings.get('ollama.repeat_penalty') || 1.1;
+
         elements.llamacppUrl.value = settings.get('llamacpp.baseUrl') || 'http://localhost:8080';
+        elements.llamacppTemp.value = settings.get('llamacpp.temperature') || 0.8;
+        elements.llamacppTopP.value = settings.get('llamacpp.top_p') || 0.9;
+        elements.llamacppTopK.value = settings.get('llamacpp.top_k') || 40;
+        elements.llamacppRepPen.value = settings.get('llamacpp.repeat_penalty') || 1.1;
+
+        if (elements.translategemmaUrl) {
+            elements.translategemmaUrl.value = settings.get('translategemma.baseUrl') || 'http://localhost:8080';
+        }
+
         elements.systemPrompt.value = settings.get('prompts.system') || '';
         elements.userPrompt.value = settings.get('prompts.user') || '';
         
         // Render custom endpoints
         renderCustomEndpoints();
+        // Helper to update range value display
+        const updateRangeDisplay = (id, valId) => {
+            const el = document.getElementById(id);
+            const valEl = document.getElementById(valId);
+            if (el && valEl) {
+                valEl.textContent = el.value;
+                el.addEventListener('input', () => valEl.textContent = el.value);
+            }
+        };
+
+        // Initialize range displays
+        updateRangeDisplay('openaiTemp', 'openaiTempVal');
+        updateRangeDisplay('openaiTopP', 'openaiTopPVal');
+        updateRangeDisplay('openaiPres', 'openaiPresVal');
+        updateRangeDisplay('openaiFreq', 'openaiFreqVal');
+
+        updateRangeDisplay('claudeTemp', 'claudeTempVal');
+        updateRangeDisplay('claudeTopP', 'claudeTopPVal');
+        updateRangeDisplay('claudeTopK', 'claudeTopKVal');
+
+        updateRangeDisplay('geminiTemp', 'geminiTempVal');
+        updateRangeDisplay('geminiTopP', 'geminiTopPVal');
+        updateRangeDisplay('geminiTopK', 'geminiTopKVal');
+
+        updateRangeDisplay('ollamaTemp', 'ollamaTempVal');
+        updateRangeDisplay('ollamaTopP', 'ollamaTopPVal');
+        updateRangeDisplay('ollamaTopK', 'ollamaTopKVal');
+        updateRangeDisplay('ollamaRepPen', 'ollamaRepPenVal');
+
+        updateRangeDisplay('llamacppTemp', 'llamacppTempVal');
+        updateRangeDisplay('llamacppTopP', 'llamacppTopPVal');
+        updateRangeDisplay('llamacppTopK', 'llamacppTopKVal');
+        updateRangeDisplay('llamacppRepPen', 'llamacppRepPenVal');
+    }
+    
+    function toggleAdvancedSettingsUI(enabled) {
+        if (!elements.advancedSettingsContainer) return;
+        
+        if (enabled) {
+            elements.advancedSettingsContainer.classList.remove('disabled-section');
+            // Enable inputs
+            const inputs = elements.advancedSettingsContainer.querySelectorAll('input, select');
+            inputs.forEach(input => input.disabled = false);
+        } else {
+            elements.advancedSettingsContainer.classList.add('disabled-section');
+            // Disable inputs to prevent interaction
+            const inputs = elements.advancedSettingsContainer.querySelectorAll('input, select');
+            inputs.forEach(input => input.disabled = true);
+        }
     }
 
-    function saveSettings() {
-        settings.set('openai.apiKey', elements.openaiKey.value);
-        settings.set('openai.baseUrl', elements.openaiBaseUrl.value);
-        settings.set('claude.apiKey', elements.claudeKey.value);
-        settings.set('gemini.apiKey', elements.geminiKey.value);
-        settings.set('ollama.baseUrl', elements.ollamaUrl.value);
-        settings.set('llamacpp.baseUrl', elements.llamacppUrl.value);
+    function saveSettingsFromUI() {
+        settings.set('enableAdvancedSettings', elements.enableAdvancedSettings ? elements.enableAdvancedSettings.checked : false);
+
+        settings.set('openai.apiKey', elements.openaiKey.value.trim());
+        settings.set('openai.baseUrl', elements.openaiBaseUrl.value.trim());
+        settings.set('openai.temperature', parseFloat(elements.openaiTemp.value));
+        settings.set('openai.top_p', parseFloat(elements.openaiTopP.value));
+        settings.set('openai.presence_penalty', parseFloat(elements.openaiPres.value));
+        settings.set('openai.frequency_penalty', parseFloat(elements.openaiFreq.value));
+
+        settings.set('claude.apiKey', elements.claudeKey.value.trim());
+        settings.set('claude.temperature', parseFloat(elements.claudeTemp.value));
+        settings.set('claude.top_p', parseFloat(elements.claudeTopP.value));
+        settings.set('claude.top_k', parseInt(elements.claudeTopK.value));
+
+        settings.set('gemini.apiKey', elements.geminiKey.value.trim());
+        settings.set('gemini.temperature', parseFloat(elements.geminiTemp.value));
+        settings.set('gemini.top_p', parseFloat(elements.geminiTopP.value));
+        settings.set('gemini.top_k', parseInt(elements.geminiTopK.value));
+
+        settings.set('ollama.baseUrl', elements.ollamaUrl.value.trim());
+        settings.set('ollama.temperature', parseFloat(elements.ollamaTemp.value));
+        settings.set('ollama.top_p', parseFloat(elements.ollamaTopP.value));
+        settings.set('ollama.top_k', parseInt(elements.ollamaTopK.value));
+        settings.set('ollama.repeat_penalty', parseFloat(elements.ollamaRepPen.value));
+
+        settings.set('llamacpp.baseUrl', elements.llamacppUrl.value.trim());
+        settings.set('llamacpp.temperature', parseFloat(elements.llamacppTemp.value));
+        settings.set('llamacpp.top_p', parseFloat(elements.llamacppTopP.value));
+        settings.set('llamacpp.top_k', parseInt(elements.llamacppTopK.value));
+        settings.set('llamacpp.repeat_penalty', parseFloat(elements.llamacppRepPen.value));
+
+        if (elements.translategemmaUrl) {
+            settings.set('translategemma.baseUrl', elements.translategemmaUrl.value.trim());
+        }
+
         settings.set('prompts.system', elements.systemPrompt.value);
         settings.set('prompts.user', elements.userPrompt.value);
         
         // Save custom endpoints from UI
         saveCustomEndpointsFromUI();
+    }
+
+    function saveSettings() {
+        saveSettingsFromUI();
         
         settings.save();
         
@@ -733,6 +970,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         elements.modelSelect.addEventListener('change', () => {
             settings.set('model', elements.modelSelect.value);
+            settings.save();
+        });
+
+        elements.streamToggle.addEventListener('change', () => {
+            settings.set('stream', elements.streamToggle.checked);
             settings.save();
         });
         

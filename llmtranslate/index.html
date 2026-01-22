@@ -63,6 +63,7 @@
                     <option value="gemini">Gemini</option>
                     <option value="ollama">Ollama</option>
                     <option value="llamacpp">llama.cpp</option>
+                    <option value="translategemma">TranslateGemma</option>
                     <!-- Custom endpoints will be added dynamically -->
                 </select>
             </div>
@@ -81,6 +82,16 @@
                             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
                         </svg>
                     </button>
+                </div>
+            </div>
+            <div class="provider-select-group">
+                <label>Options</label>
+                <div class="checkbox-wrapper">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="streamToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-text">Streaming</span>
                 </div>
             </div>
         </div>
@@ -202,6 +213,12 @@
         <div class="translate-btn-container">
             <button class="translate-btn" id="translateBtn">
                 <span class="btn-text">번역하기</span>
+                <span class="btn-stop" style="display: none;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px; vertical-align: middle;">
+                        <rect x="6" y="6" width="12" height="12" rx="2" ry="2"/>
+                    </svg>
+                    멈추기
+                </span>
                 <span class="btn-loader" style="display: none;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spinner">
                         <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="16"/>
@@ -226,6 +243,7 @@
             <div class="modal-body">
                 <div class="settings-tabs">
                     <button class="tab-btn active" data-tab="api">API 설정</button>
+                    <button class="tab-btn" data-tab="model">모델 설정</button>
                     <button class="tab-btn" data-tab="prompt">프롬프트</button>
                     <button class="tab-btn" data-tab="export">내보내기</button>
                 </div>
@@ -277,6 +295,15 @@
                     </div>
 
                     <div class="settings-section">
+                        <h3>TranslateGemma</h3>
+                        <p class="help-text">llama.cpp 서버에서 TranslateGemma 모델을 사용합니다. Gemma 3 채팅 템플릿 형식으로 번역합니다.</p>
+                        <div class="input-group">
+                            <label for="translategemmaUrl">Server URL</label>
+                            <input type="text" id="translategemmaUrl" class="text-input" placeholder="http://localhost:8080">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
                         <div class="section-header">
                             <h3>커스텀 엔드포인트</h3>
                             <button class="btn-icon" id="addEndpointBtn" title="엔드포인트 추가">
@@ -292,6 +319,110 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Model Settings Tab -->
+                <div class="tab-content" id="model-tab">
+                    <div class="settings-control-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="enableAdvancedSettings">
+                            <span>고급 모델 설정 사용 (Temperature, Top P 등)</span>
+                        </label>
+                    </div>
+                    
+                    <div id="advancedSettingsContainer" class="disabled-section">
+                    <div class="settings-section">
+                        <h3>OpenAI 설정</h3>
+                        <div class="input-range-group">
+                            <label>Temperature <span id="openaiTempVal">0.7</span></label>
+                            <input type="range" id="openaiTemp" min="0" max="2" step="0.1" value="0.7">
+                        </div>
+                        <div class="input-range-group">
+                            <label>Top P <span id="openaiTopPVal">1.0</span></label>
+                            <input type="range" id="openaiTopP" min="0" max="1" step="0.05" value="1.0">
+                        </div>
+                        <div class="input-range-group">
+                            <label>Presence Penalty <span id="openaiPresVal">0.0</span></label>
+                            <input type="range" id="openaiPres" min="-2" max="2" step="0.1" value="0.0">
+                        </div>
+                        <div class="input-range-group">
+                            <label>Frequency Penalty <span id="openaiFreqVal">0.0</span></label>
+                            <input type="range" id="openaiFreq" min="-2" max="2" step="0.1" value="0.0">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Claude 설정</h3>
+                        <div class="input-range-group">
+                            <label>Temperature <span id="claudeTempVal">0.7</span></label>
+                            <input type="range" id="claudeTemp" min="0" max="1" step="0.1" value="0.7">
+                        </div>
+                        <div class="input-range-group">
+                            <label>Top P <span id="claudeTopPVal">1.0</span></label>
+                            <input type="range" id="claudeTopP" min="0" max="1" step="0.05" value="1.0">
+                        </div>
+                        <div class="input-range-group">
+                            <label>Top K <span id="claudeTopKVal">0</span></label>
+                            <input type="number" id="claudeTopK" class="text-input" value="0" placeholder="0 (disabled)">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Gemini 설정</h3>
+                        <div class="input-range-group">
+                            <label>Temperature <span id="geminiTempVal">0.7</span></label>
+                            <input type="range" id="geminiTemp" min="0" max="2" step="0.1" value="0.7">
+                        </div>
+                        <div class="input-range-group">
+                            <label>Top P <span id="geminiTopPVal">0.95</span></label>
+                            <input type="range" id="geminiTopP" min="0" max="1" step="0.05" value="0.95">
+                        </div>
+                        <div class="input-range-group">
+                            <label>Top K <span id="geminiTopKVal">40</span></label>
+                            <input type="number" id="geminiTopK" class="text-input" value="40">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Ollama 설정</h3>
+                        <div class="input-range-group">
+                            <label>Temperature <span id="ollamaTempVal">0.7</span></label>
+                            <input type="range" id="ollamaTemp" min="0" max="1" step="0.1" value="0.7">
+                        </div>
+                        <div class="input-range-group">
+                            <label>Top P <span id="ollamaTopPVal">0.9</span></label>
+                            <input type="range" id="ollamaTopP" min="0" max="1" step="0.05" value="0.9">
+                        </div>
+                        <div class="input-range-group">
+                            <label>Top K <span id="ollamaTopKVal">40</span></label>
+                            <input type="number" id="ollamaTopK" class="text-input" value="40">
+                        </div>
+                        <div class="input-range-group">
+                            <label>Repeat Penalty <span id="ollamaRepPenVal">1.1</span></label>
+                            <input type="range" id="ollamaRepPen" min="1" max="2" step="0.05" value="1.1">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>llama.cpp 설정</h3>
+                        <div class="input-range-group">
+                            <label>Temperature <span id="llamacppTempVal">0.7</span></label>
+                            <input type="range" id="llamacppTemp" min="0" max="1" step="0.1" value="0.7">
+                        </div>
+                        <div class="input-range-group">
+                            <label>Top P <span id="llamacppTopPVal">0.95</span></label>
+                            <input type="range" id="llamacppTopP" min="0" max="1" step="0.05" value="0.95">
+                        </div>
+                        <div class="input-range-group">
+                            <label>Top K <span id="llamacppTopKVal">40</span></label>
+                            <input type="number" id="llamacppTopK" class="text-input" value="40">
+                        </div>
+                        <div class="input-range-group">
+                            <label>Repeat Penalty <span id="llamacppRepPenVal">1.1</span></label>
+                            <input type="range" id="llamacppRepPen" min="1" max="2" step="0.05" value="1.1">
+                        </div>
+                    </div>
+                    </div> <!-- End of advancedSettingsContainer -->
+                </div> <!-- End of model-tab -->
 
                 <!-- Prompt Settings Tab -->
                 <div class="tab-content" id="prompt-tab">

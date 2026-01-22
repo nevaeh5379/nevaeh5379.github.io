@@ -12,21 +12,48 @@ class SettingsManager {
             model: 'gpt-4o-mini',
             sourceLang: 'auto',
             targetLang: 'en',
+            stream: true,
+            enableAdvancedSettings: false,
             openai: {
                 apiKey: '',
-                baseUrl: ''
+                baseUrl: '',
+                temperature: 0.7,
+                top_p: 1.0,
+                presence_penalty: 0.0,
+                frequency_penalty: 0.0
             },
             claude: {
-                apiKey: ''
+                apiKey: '',
+                temperature: 0.7,
+                top_p: 1.0,
+                top_k: 0
             },
             gemini: {
-                apiKey: ''
+                apiKey: '',
+                temperature: 0.7,
+                top_p: 0.95,
+                top_k: 40
             },
             ollama: {
-                baseUrl: 'http://localhost:11434'
+                baseUrl: 'http://localhost:11434',
+                temperature: 0.7,
+                top_p: 0.9,
+                top_k: 40,
+                repeat_penalty: 1.1
             },
             llamacpp: {
-                baseUrl: 'http://localhost:8080'
+                baseUrl: 'http://localhost:8080',
+                temperature: 0.7,
+                top_p: 0.95,
+                top_k: 40,
+                repeat_penalty: 1.1
+            },
+            translategemma: {
+                baseUrl: 'http://localhost:8080',
+                temperature: 0.3,
+                top_p: 0.95,
+                top_k: 40,
+                repeat_penalty: 1.0
             },
             // Custom endpoints - array of custom OpenAI-compatible endpoints
             customEndpoints: [],
@@ -220,30 +247,92 @@ Text to translate:
 
         switch (provider) {
             case 'openai':
-                return {
+                const baseOpenAIConfig = {
                     apiKey: this.get('openai.apiKey'),
                     baseUrl: this.get('openai.baseUrl'),
                     model: this.get('model')
                 };
+                if (this.get('enableAdvancedSettings')) {
+                    return {
+                        ...baseOpenAIConfig,
+                        temperature: this.get('openai.temperature'),
+                        top_p: this.get('openai.top_p'),
+                        presence_penalty: this.get('openai.presence_penalty'),
+                        frequency_penalty: this.get('openai.frequency_penalty')
+                    };
+                }
+                return baseOpenAIConfig;
             case 'claude':
-                return {
+                const baseClaudeConfig = {
                     apiKey: this.get('claude.apiKey'),
                     model: this.get('model')
                 };
+                if (this.get('enableAdvancedSettings')) {
+                    return {
+                        ...baseClaudeConfig,
+                        temperature: this.get('claude.temperature'),
+                        top_p: this.get('claude.top_p'),
+                        top_k: this.get('claude.top_k')
+                    };
+                }
+                return baseClaudeConfig;
             case 'gemini':
-                return {
+                const baseGeminiConfig = {
                     apiKey: this.get('gemini.apiKey'),
                     model: this.get('model')
                 };
+                if (this.get('enableAdvancedSettings')) {
+                    return {
+                        ...baseGeminiConfig,
+                        temperature: this.get('gemini.temperature'),
+                        top_p: this.get('gemini.top_p'),
+                        top_k: this.get('gemini.top_k')
+                    };
+                }
+                return baseGeminiConfig;
             case 'ollama':
-                return {
+                const baseOllamaConfig = {
                     baseUrl: this.get('ollama.baseUrl'),
                     model: this.get('model')
                 };
+                if (this.get('enableAdvancedSettings')) {
+                    return {
+                        ...baseOllamaConfig,
+                        temperature: this.get('ollama.temperature'),
+                        top_p: this.get('ollama.top_p'),
+                        top_k: this.get('ollama.top_k'),
+                        repeat_penalty: this.get('ollama.repeat_penalty')
+                    };
+                }
+                return baseOllamaConfig;
             case 'llamacpp':
-                return {
+                const baseLlamaCppConfig = {
                     baseUrl: this.get('llamacpp.baseUrl')
                 };
+                if (this.get('enableAdvancedSettings')) {
+                    return {
+                        ...baseLlamaCppConfig,
+                        temperature: this.get('llamacpp.temperature'),
+                        top_p: this.get('llamacpp.top_p'),
+                        top_k: this.get('llamacpp.top_k'),
+                        repeat_penalty: this.get('llamacpp.repeat_penalty')
+                    };
+                }
+                return baseLlamaCppConfig;
+            case 'translategemma':
+                const baseTranslateGemmaConfig = {
+                    baseUrl: this.get('translategemma.baseUrl')
+                };
+                if (this.get('enableAdvancedSettings')) {
+                    return {
+                        ...baseTranslateGemmaConfig,
+                        temperature: this.get('translategemma.temperature'),
+                        top_p: this.get('translategemma.top_p'),
+                        top_k: this.get('translategemma.top_k'),
+                        repeat_penalty: this.get('translategemma.repeat_penalty')
+                    };
+                }
+                return baseTranslateGemmaConfig;
             default:
                 return {};
         }

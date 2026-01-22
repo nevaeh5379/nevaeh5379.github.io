@@ -9,16 +9,16 @@ class BaseProvider {
         this.config = config;
     }
 
-    async translate(text, sourceLang, targetLang, systemPrompt, userPrompt) {
+    async translate(text, sourceLang, targetLang, systemPrompt, userPrompt, options = {}) {
         throw new Error('translate method must be implemented');
     }
 
     // Streaming translate with callbacks
     // callbacks: { onContent, onReasoning, onDone, onError }
-    async translateStream(text, sourceLang, targetLang, systemPrompt, userPrompt, callbacks) {
+    async translateStream(text, sourceLang, targetLang, systemPrompt, userPrompt, callbacks, options = {}) {
         // Default implementation falls back to non-streaming
         try {
-            const result = await this.translate(text, sourceLang, targetLang, systemPrompt, userPrompt);
+            const result = await this.translate(text, sourceLang, targetLang, systemPrompt, userPrompt, options);
             if (callbacks.onContent) callbacks.onContent(result);
             if (callbacks.onDone) callbacks.onDone(result);
         } catch (error) {
@@ -69,7 +69,7 @@ class BaseProvider {
 
 // OpenAI Provider
 class OpenAIProvider extends BaseProvider {
-    async translate(text, sourceLang, targetLang, systemPrompt, userPrompt) {
+    async translate(text, sourceLang, targetLang, systemPrompt, userPrompt, options = {}) {
         const apiKey = this.config.apiKey;
         const baseUrl = this.config.baseUrl || 'https://api.openai.com/v1';
         const model = this.config.model || 'gpt-4o-mini';
@@ -90,7 +90,10 @@ class OpenAIProvider extends BaseProvider {
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: this.buildPrompt(text, sourceLang, targetLang, userPrompt) }
                 ],
-                temperature: 0.3
+                temperature: this.config.temperature,
+                top_p: this.config.top_p,
+                presence_penalty: this.config.presence_penalty,
+                frequency_penalty: this.config.frequency_penalty
             })
         });
 
@@ -125,7 +128,10 @@ class OpenAIProvider extends BaseProvider {
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: this.buildPrompt(text, sourceLang, targetLang, userPrompt) }
                     ],
-                    temperature: 0.3,
+                    temperature: this.config.temperature,
+                    top_p: this.config.top_p,
+                    presence_penalty: this.config.presence_penalty,
+                    frequency_penalty: this.config.frequency_penalty,
                     stream: true
                 })
             });
@@ -219,7 +225,7 @@ class OpenAIProvider extends BaseProvider {
 
 // Claude Provider
 class ClaudeProvider extends BaseProvider {
-    async translate(text, sourceLang, targetLang, systemPrompt, userPrompt) {
+    async translate(text, sourceLang, targetLang, systemPrompt, userPrompt, options = {}) {
         const apiKey = this.config.apiKey;
         const model = this.config.model || 'claude-3-5-sonnet-20241022';
 
@@ -241,7 +247,10 @@ class ClaudeProvider extends BaseProvider {
                 system: systemPrompt,
                 messages: [
                     { role: 'user', content: this.buildPrompt(text, sourceLang, targetLang, userPrompt) }
-                ]
+                ],
+                temperature: this.config.temperature,
+                top_p: this.config.top_p,
+                top_k: this.config.top_k
             })
         });
 
@@ -274,7 +283,10 @@ class ClaudeProvider extends BaseProvider {
             thinking: {
                 type: 'enabled',
                 budget_tokens: 8000
-            }
+            },
+            temperature: this.config.temperature,
+            top_p: this.config.top_p,
+            top_k: this.config.top_k
         };
 
         try {
@@ -372,7 +384,7 @@ class ClaudeProvider extends BaseProvider {
 
 // Gemini Provider
 class GeminiProvider extends BaseProvider {
-    async translate(text, sourceLang, targetLang, systemPrompt, userPrompt) {
+    async translate(text, sourceLang, targetLang, systemPrompt, userPrompt, options = {}) {
         const apiKey = this.config.apiKey;
         const model = this.config.model || 'gemini-2.0-flash-exp';
 
@@ -395,9 +407,12 @@ class GeminiProvider extends BaseProvider {
                         parts: [{ text: this.buildPrompt(text, sourceLang, targetLang, userPrompt) }]
                     }],
                     generationConfig: {
-                        temperature: 0.3
+                        temperature: this.config.temperature,
+                        topP: this.config.top_p,
+                        topK: this.config.top_k
                     }
-                })
+                }),
+                signal: options.signal
             }
         );
 
@@ -410,7 +425,7 @@ class GeminiProvider extends BaseProvider {
         return data.candidates[0].content.parts[0].text.trim();
     }
 
-    async translateStream(text, sourceLang, targetLang, systemPrompt, userPrompt, callbacks) {
+    async translateStream(text, sourceLang, targetLang, systemPrompt, userPrompt, callbacks, options = {}) {
         const apiKey = this.config.apiKey;
         const model = this.config.model || 'gemini-2.0-flash-exp';
 
@@ -434,9 +449,12 @@ class GeminiProvider extends BaseProvider {
                             parts: [{ text: this.buildPrompt(text, sourceLang, targetLang, userPrompt) }]
                         }],
                         generationConfig: {
-                            temperature: 0.3
+                            temperature: this.config.temperature,
+                            topP: this.config.top_p,
+                            topK: this.config.top_k
                         }
-                    })
+                    }),
+                    signal: options.signal
                 }
             );
 
@@ -531,7 +549,7 @@ class GeminiProvider extends BaseProvider {
 
 // Ollama Provider
 class OllamaProvider extends BaseProvider {
-    async translate(text, sourceLang, targetLang, systemPrompt, userPrompt) {
+    async translate(text, sourceLang, targetLang, systemPrompt, userPrompt, options = {}) {
         const baseUrl = this.config.baseUrl || 'http://localhost:11434';
         const model = this.config.model || 'llama3.2';
 
@@ -548,9 +566,13 @@ class OllamaProvider extends BaseProvider {
                 ],
                 stream: false,
                 options: {
-                    temperature: 0.3
+                    temperature: this.config.temperature,
+                    top_p: this.config.top_p,
+                    top_k: this.config.top_k,
+                    repeat_penalty: this.config.repeat_penalty
                 }
-            })
+            }),
+            signal: options.signal
         });
 
         if (!response.ok) {
@@ -579,9 +601,13 @@ class OllamaProvider extends BaseProvider {
                     ],
                     stream: true,
                     options: {
-                        temperature: 0.3
+                        temperature: this.config.temperature,
+                        top_p: this.config.top_p,
+                        top_k: this.config.top_k,
+                        repeat_penalty: this.config.repeat_penalty
                     }
-                })
+                }),
+                signal: options.signal
             });
 
             if (!response.ok) {
@@ -661,7 +687,7 @@ class OllamaProvider extends BaseProvider {
 
 // llama.cpp Provider
 class LlamaCppProvider extends BaseProvider {
-    async translate(text, sourceLang, targetLang, systemPrompt, userPrompt) {
+    async translate(text, sourceLang, targetLang, systemPrompt, userPrompt, options = {}) {
         const baseUrl = this.config.baseUrl || 'http://localhost:8080';
 
         const response = await fetch(`${baseUrl}/v1/chat/completions`, {
@@ -674,7 +700,10 @@ class LlamaCppProvider extends BaseProvider {
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: this.buildPrompt(text, sourceLang, targetLang, userPrompt) }
                 ],
-                temperature: 0.3
+                temperature: this.config.temperature,
+                top_p: this.config.top_p,
+                top_k: this.config.top_k,
+                repeat_penalty: this.config.repeat_penalty
             })
         });
 
@@ -706,13 +735,16 @@ class LlamaCppProvider extends BaseProvider {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: this.buildPrompt(text, sourceLang, targetLang, userPrompt) }
-                    ],
-                    temperature: 0.3,
-                    stream: true
-                })
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: this.buildPrompt(text, sourceLang, targetLang, userPrompt) }
+                ],
+                temperature: this.config.temperature,
+                top_p: this.config.top_p,
+                top_k: this.config.top_k,
+                repeat_penalty: this.config.repeat_penalty,
+                stream: true
+            })
             });
 
             if (!response.ok) {
@@ -883,6 +915,215 @@ class LlamaCppProvider extends BaseProvider {
     static getDefaultModels() {
         return [
             { value: 'default', label: '로드된 모델' }
+        ];
+    }
+}
+
+// TranslateGemma Provider (for llama.cpp with TranslateGemma model)
+// Uses Gemma 3 chat template special tokens for direct translation
+class TranslateGemmaProvider extends BaseProvider {
+    // TranslateGemma supported language codes (ISO 639-1)
+    static SUPPORTED_LANGS = [
+        'ar', 'bn', 'cs', 'da', 'de', 'el', 'en', 'es', 'fa', 'fi',
+        'fr', 'gu', 'he', 'hi', 'hr', 'hu', 'id', 'it', 'ja', 'kn',
+        'ko', 'ml', 'mr', 'nl', 'no', 'pl', 'pt', 'ro', 'ru', 'sk',
+        'sl', 'sr', 'sv', 'sw', 'ta', 'te', 'th', 'tr', 'uk', 'ur',
+        'vi', 'zh'
+    ];
+
+    constructor(config) {
+        super(config);
+    }
+
+    // Build TranslateGemma format prompt using Gemma 3 chat template
+    buildTranslateGemmaPrompt(text, sourceLang, targetLang) {
+        // Normalize language codes
+        const srcLang = this.normalizeLanguageCode(sourceLang);
+        const tgtLang = this.normalizeLanguageCode(targetLang);
+
+        // Validate language codes
+        if (srcLang !== 'auto' && !TranslateGemmaProvider.SUPPORTED_LANGS.includes(srcLang.split(/[-_]/)[0])) {
+            console.warn(`Source language '${srcLang}' may not be supported by TranslateGemma`);
+        }
+        if (!TranslateGemmaProvider.SUPPORTED_LANGS.includes(tgtLang.split(/[-_]/)[0])) {
+            console.warn(`Target language '${tgtLang}' may not be supported by TranslateGemma`);
+        }
+
+        // Build the TranslateGemma content JSON structure
+        const contentJson = JSON.stringify({
+            type: "text",
+            source_lang_code: srcLang === 'auto' ? '' : srcLang,
+            target_lang_code: tgtLang,
+            text: text
+        });
+
+        // Gemma 3 chat template format with special tokens
+        // <bos><start_of_turn>user\n{content}<end_of_turn>\n<start_of_turn>model\n
+        const prompt = `<bos><start_of_turn>user
+${contentJson}<end_of_turn>
+<start_of_turn>model
+`;
+        return prompt;
+    }
+
+    normalizeLanguageCode(code) {
+        if (!code || code === 'auto') return 'auto';
+        // Handle regionalized codes like en_US or en-GB
+        // Keep the full code as TranslateGemma supports them
+        return code.toLowerCase().replace('_', '-');
+    }
+
+    async translate(text, sourceLang, targetLang, systemPrompt, userPrompt, options = {}) {
+        const baseUrl = this.config.baseUrl || 'http://localhost:8080';
+
+        // Build TranslateGemma format prompt
+        const prompt = this.buildTranslateGemmaPrompt(text, sourceLang, targetLang);
+
+        // Use /completion endpoint for raw prompt (not chat completions)
+        const response = await fetch(`${baseUrl}/completion`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                prompt: prompt,
+                temperature: this.config.temperature ?? 0.3,
+                top_p: this.config.top_p ?? 0.95,
+                top_k: this.config.top_k ?? 40,
+                repeat_penalty: this.config.repeat_penalty ?? 1.0,
+                stop: ['<end_of_turn>', '<eos>'],
+                // Don't add BOS/EOS tokens as we're including them in the prompt
+                stream: false
+            }),
+            signal: options.signal
+        });
+
+        if (!response.ok) {
+            throw new Error(`TranslateGemma 연결 오류: ${response.status}. llama.cpp 서버가 TranslateGemma 모델과 함께 실행 중인지 확인하세요.`);
+        }
+
+        const data = await response.json();
+        const content = data.content || data.response || '';
+        
+        // Clean up any trailing special tokens
+        return content.replace(/<end_of_turn>|<eos>/g, '').trim();
+    }
+
+    async translateStream(text, sourceLang, targetLang, systemPrompt, userPrompt, callbacks, options = {}) {
+        const baseUrl = this.config.baseUrl || 'http://localhost:8080';
+
+        // Build TranslateGemma format prompt
+        const prompt = this.buildTranslateGemmaPrompt(text, sourceLang, targetLang);
+
+        try {
+            const response = await fetch(`${baseUrl}/completion`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    temperature: this.config.temperature ?? 0.3,
+                    top_p: this.config.top_p ?? 0.95,
+                    top_k: this.config.top_k ?? 40,
+                    repeat_penalty: this.config.repeat_penalty ?? 1.0,
+                    stop: ['<end_of_turn>', '<eos>'],
+                    stream: true
+                }),
+                signal: options.signal
+            });
+
+            if (!response.ok) {
+                throw new Error(`TranslateGemma 연결 오류: ${response.status}. llama.cpp 서버가 TranslateGemma 모델과 함께 실행 중인지 확인하세요.`);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let fullContent = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]') continue;
+
+                        try {
+                            const parsed = JSON.parse(data);
+                            const content = parsed.content;
+                            if (content) {
+                                // Check for stop tokens
+                                if (content.includes('<end_of_turn>') || content.includes('<eos>')) {
+                                    const cleaned = content.replace(/<end_of_turn>|<eos>/g, '');
+                                    fullContent += cleaned;
+                                    break;
+                                }
+                                fullContent += content;
+                                if (callbacks.onContent) callbacks.onContent(fullContent);
+                            }
+                        } catch (e) {
+                            // Skip invalid JSON
+                        }
+                    } else if (line.trim() && !line.startsWith('event:')) {
+                        // Try parsing non-SSE format (llama.cpp default streaming)
+                        try {
+                            const parsed = JSON.parse(line);
+                            const content = parsed.content;
+                            if (content) {
+                                if (content.includes('<end_of_turn>') || content.includes('<eos>')) {
+                                    const cleaned = content.replace(/<end_of_turn>|<eos>/g, '');
+                                    fullContent += cleaned;
+                                    break;
+                                }
+                                fullContent += content;
+                                if (callbacks.onContent) callbacks.onContent(fullContent);
+                            }
+                        } catch (e) {
+                            // Skip invalid JSON
+                        }
+                    }
+                }
+            }
+
+            // Final cleanup
+            const finalOutput = fullContent.replace(/<end_of_turn>|<eos>/g, '').trim();
+            if (callbacks.onDone) callbacks.onDone(finalOutput);
+            return finalOutput;
+        } catch (error) {
+            if (callbacks.onError) callbacks.onError(error);
+            throw error;
+        }
+    }
+
+    static async fetchModels(config) {
+        const baseUrl = config.baseUrl || 'http://localhost:8080';
+
+        try {
+            const response = await fetch(`${baseUrl}/v1/models`);
+
+            if (!response.ok) {
+                return this.getDefaultModels();
+            }
+
+            const data = await response.json();
+            const models = data.data
+                .map(m => ({ value: m.id, label: m.id }));
+
+            return models.length > 0 ? models : this.getDefaultModels();
+        } catch (e) {
+            console.error('Failed to fetch TranslateGemma models:', e);
+            return this.getDefaultModels();
+        }
+    }
+
+    static getDefaultModels() {
+        return [
+            { value: 'default', label: 'TranslateGemma' }
         ];
     }
 }
@@ -1059,6 +1300,8 @@ class ProviderFactory {
                 return new OllamaProvider(config);
             case 'llamacpp':
                 return new LlamaCppProvider(config);
+            case 'translategemma':
+                return new TranslateGemmaProvider(config);
             case 'openai-compatible':
                 return new OpenAICompatibleProvider(config);
             default:
@@ -1078,6 +1321,8 @@ class ProviderFactory {
                 return OllamaProvider.fetchModels(config);
             case 'llamacpp':
                 return LlamaCppProvider.fetchModels(config);
+            case 'translategemma':
+                return TranslateGemmaProvider.fetchModels(config);
             case 'openai-compatible':
                 return OpenAICompatibleProvider.fetchModels(config);
             default:
@@ -1097,6 +1342,8 @@ class ProviderFactory {
                 return OllamaProvider.getDefaultModels();
             case 'llamacpp':
                 return LlamaCppProvider.getDefaultModels();
+            case 'translategemma':
+                return TranslateGemmaProvider.getDefaultModels();
             case 'openai-compatible':
                 return OpenAICompatibleProvider.getDefaultModels();
             default:
