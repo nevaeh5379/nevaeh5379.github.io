@@ -1,9 +1,0 @@
-# Root Jekyll config for GitHub Pages
-# Exclude non-Jekyll directories from processing
-exclude:
-  - skills/
-  - charuser/
-  - llmtranslate/
-  - removestar/
-  - license
-  - README.md
