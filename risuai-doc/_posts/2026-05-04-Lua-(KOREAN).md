@@ -1,6 +1,7 @@
 ---
 layout: post
 title: "Lua 문법 (한국어)"
+excerpt_separator: ""
 ---
 {% raw %}
 # RisuAI Lua 스크립팅 — LLM 참조서이랍니다

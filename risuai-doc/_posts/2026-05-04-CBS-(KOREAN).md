@@ -1,6 +1,7 @@
 ---
 layout: post
 title: "CBS 문법 (한국어)"
+excerpt_separator: ""
 ---
 {% raw %}
 # RisuAI CBS — LLM 참조서이랍니다
