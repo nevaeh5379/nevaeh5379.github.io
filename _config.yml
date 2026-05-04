@@ -1,2 +1,6 @@
+title: My GitHub Page
+description: Welcome to my personal website!
+theme: jekyll-theme-minimal
+
 exclude:
   - skills/
