@@ -43,8 +43,6 @@ plugins:
 # their entries' file path in the `include:` list.
 #
 exclude:
-  - risuai-doc/CBS_LLM_REFERENCE.md
-  - risuai-doc/LUA_LLM_REFERENCE.md
 #   - .sass-cache/
 #   - .jekyll-cache/
 #   - gemfiles/
