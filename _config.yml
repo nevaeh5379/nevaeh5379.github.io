@@ -1,6 +1,10 @@
 title: 이것저것 유용한 것들
 description: 내가 만든 유용한 모음집
-theme: no-style-please
+remote_theme: riggraz/no-style-please
+plugins:
+  - jekyll-remote-theme
+  - jekyll-seo-tag
+  - jekyll-feed
 
 exclude:
   - skills/
