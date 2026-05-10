@@ -1,13 +1,15 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+
 * { box-sizing: border-box; }
 
 body {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   max-width: 800px;
   margin: 0 auto;
   padding: 0 1rem 2rem;
   background: #fff;
   color: #111;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 header {
@@ -26,6 +28,10 @@ footer {
   padding-top: 0.5rem;
   font-size: 0.8rem;
   color: #888;
+}
+
+pre, code {
+  font-family: 'Courier New', Courier, monospace;
 }
 
 pre {
@@ -52,3 +58,17 @@ th { background: #f4f4f4; }
 hr { border: none; border-top: 1px solid #ccc; }
 
 .post-meta { color: #888; font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+@media (prefers-color-scheme: dark) {
+  body { background: #1a1a1a; color: #ddd; }
+  header { border-bottom-color: #ddd; }
+  header a { color: #ddd; }
+  nav a { color: #aaa; }
+  pre { background: #252525; border-left-color: #aaa; }
+  code { background: #252525; }
+  blockquote { border-left-color: #555; color: #aaa; }
+  td, th { border-color: #444; }
+  th { background: #252525; }
+  hr { border-top-color: #444; }
+  footer { border-top-color: #444; color: #666; }
+}
