@@ -13,5 +13,6 @@ title: Home
 
 # 내가 만든 Risuai 플러그인 목록
 - [고오급 에디터 플러그인](https://github.com/nevaeh5379/plugins/releases?q=risu-editor-plugin&expanded=true)
+
 # 기타
 - [ComfyEmotionGen](https://github.com/nevaeh5379/ComfyEmotionGen)
