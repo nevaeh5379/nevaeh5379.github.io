@@ -10,6 +10,8 @@ body {
   background: #fff;
   color: #111;
   line-height: 1.7;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 header {
@@ -51,8 +53,15 @@ blockquote {
   color: #555;
 }
 
-table { border-collapse: collapse; width: 100%; }
-td, th { border: 1px solid #ccc; padding: 4px 8px; }
+table {
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+  width: max-content;
+  max-width: 100%;
+}
+td, th { border: 1px solid #ccc; padding: 4px 8px; white-space: nowrap; }
+td { white-space: normal; }
 th { background: #f4f4f4; }
 
 hr { border: none; border-top: 1px solid #ccc; }
