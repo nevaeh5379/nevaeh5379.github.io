@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if page.title %}{{ page.title }} — {% endif %}{{ site.title }}</title>
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+</head>
+<body>
+  <header>
+    <a href="{{ '/' | relative_url }}">{{ site.title }}</a>
+  </header>
+  <main>
+    {% if page.date %}
+    <div class="post-meta">{{ page.date | date: "%Y-%m-%d" }}</div>
+    {% endif %}
+    {{ content }}
+  </main>
+  <footer>{{ site.url | default: site.title }}</footer>
+</body>
+</html>
