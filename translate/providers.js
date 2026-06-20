@@ -9,7 +9,7 @@ export const LANGUAGE_NAMES = {
 };
 
 export const DEFAULT_ENDPOINTS = [
-  { id: 'openai-default', name: 'OpenAI', baseUrl: 'https://api.openai.com/v1', apiKey: '', model: 'gpt-4o-mini', builtin: true },
+  { id: 'openai-default', name: 'OpenAI', baseUrl: 'https://api.openai.com/v1', apiKey: '', model: 'gpt-4o-mini' },
 ];
 
 /**

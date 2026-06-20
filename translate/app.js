@@ -84,13 +84,16 @@ function populateLangs() {
 function populateEndpoints() {
   const eps = settings.data.endpoints;
   el.endpointSelect.innerHTML = eps.map(e =>
-    `<option value="${e.id}">${escapeHtml(e.name)}${e.builtin ? '' : ' ⚙'}</option>`
+    `<option value="${e.id}">${escapeHtml(e.name)}</option>`
   ).join('');
 }
 
 function bindEvents() {
   el.endpointSelect.addEventListener('change', () => {
     settings.setSelectedEndpoint(el.endpointSelect.value);
+    // 새 엔드포인트의 기본 모델로 리셋
+    const ep = settings.getSelectedEndpoint();
+    settings.set('model', ep?.model || '');
     settings.save();
     refreshModels();
     applySettingsToMain();
@@ -358,14 +361,14 @@ function renderEndpointList(highlight) {
   el.endpointList.innerHTML = eps.map(e => `
     <div class="endpoint-card" data-id="${e.id}">
       <div class="row">
-        <input type="text" data-field="name" value="${escapeAttr(e.name)}" placeholder="이름" ${e.builtin ? 'disabled' : ''}>
-        <input type="text" data-field="baseUrl" value="${escapeAttr(e.baseUrl)}" placeholder="Base URL (https://...)" ${e.builtin ? 'disabled' : ''}>
+        <input type="text" data-field="name" value="${escapeAttr(e.name)}" placeholder="이름">
+        <input type="text" data-field="baseUrl" value="${escapeAttr(e.baseUrl)}" placeholder="Base URL (https://...)" >
       </div>
       <div class="row">
-        <input type="password" data-field="apiKey" value="${escapeAttr(e.apiKey)}" placeholder="API Key" ${e.builtin ? 'disabled' : ''}>
+        <input type="password" data-field="apiKey" value="${escapeAttr(e.apiKey)}" placeholder="API Key">
         <input type="text" data-field="model" value="${escapeAttr(e.model)}" placeholder="기본 모델">
       </div>
-      ${e.builtin ? '' : `<button class="btn btn-danger del-btn" data-del="${e.id}">삭제</button>`}
+      <button class="btn btn-danger del-btn" data-del="${e.id}">삭제</button>
     </div>
   `).join('');
   // bind

@@ -54,10 +54,9 @@ export class SettingsManager {
       if (!raw) return;
       const parsed = JSON.parse(raw);
       this.data = mergeDeep(clone(DEFAULTS), parsed);
-      // 빌트인 엔드포인트가 변경됐을 수 있으니 동기화 (id 일치하는 것은 유지하되 빌트인 메타 갱신)
-      const builtinIds = new Set(DEFAULT_ENDPOINTS.map(e => e.id));
-      const custom = (this.data.endpoints || []).filter(e => !builtinIds.has(e.id));
-      this.data.endpoints = [...DEFAULT_ENDPOINTS, ...custom];
+      if (!this.data.endpoints || !this.data.endpoints.length) {
+        this.data.endpoints = clone(DEFAULT_ENDPOINTS);
+      }
     } catch (e) { /* ignore corrupt */ }
   }
 
@@ -94,7 +93,7 @@ export class SettingsManager {
 
   addEndpoint({ name, baseUrl, apiKey, model }) {
     const id = 'c-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    const ep = { id, name: name || 'Custom', baseUrl: baseUrl || '', apiKey: apiKey || '', model: model || '', builtin: false };
+    const ep = { id, name: name || 'Custom', baseUrl: baseUrl || '', apiKey: apiKey || '', model: model || '' };
     this.data.endpoints.push(ep);
     this.save();
     return ep;
@@ -102,7 +101,7 @@ export class SettingsManager {
 
   updateEndpoint(id, patch) {
     const ep = this.getEndpoint(id);
-    if (!ep || ep.builtin) return false;
+    if (!ep) return false;
     Object.assign(ep, patch);
     this.save();
     return true;
@@ -110,7 +109,8 @@ export class SettingsManager {
 
   deleteEndpoint(id) {
     const idx = this.data.endpoints.findIndex(e => e.id === id);
-    if (idx < 0 || this.data.endpoints[idx].builtin) return false;
+    if (idx < 0) return false;
+    if (this.data.endpoints.length <= 1) return false; // 마지막 하나는 삭제 불가
     this.data.endpoints.splice(idx, 1);
     if (this.data.endpointId === id) this.data.endpointId = this.data.endpoints[0]?.id || '';
     this.save();
@@ -147,10 +147,9 @@ export class SettingsManager {
     const text = await file.text();
     const parsed = JSON.parse(text);
     this.data = mergeDeep(clone(DEFAULTS), parsed);
-    // 빌트인 동기화
-    const builtinIds = new Set(DEFAULT_ENDPOINTS.map(e => e.id));
-    const custom = (this.data.endpoints || []).filter(e => !builtinIds.has(e.id));
-    this.data.endpoints = [...DEFAULT_ENDPOINTS, ...custom];
+    if (!this.data.endpoints || !this.data.endpoints.length) {
+      this.data.endpoints = clone(DEFAULT_ENDPOINTS);
+    }
     this.save();
   }
 }
