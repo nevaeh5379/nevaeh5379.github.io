@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM 번역기</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <span class="title">🌐 LLM 번역기</span>
+    <div class="actions">
+      <button class="icon-btn" id="history-btn" title="기록">🕘</button>
+      <button class="icon-btn" id="settings-btn" title="설정">⚙️</button>
+    </div>
+  </header>
+
+  <div class="controls">
+    <select id="endpoint-select" title="엔드포인트"></select>
+    <select id="model-select" title="모델"></select>
+    <button class="icon-btn" id="refresh-models" title="모델 새로고침">🔄</button>
+    <label class="inline"><input type="checkbox" id="stream-toggle" checked> 스트리밍</label>
+  </div>
+
+  <div class="lang-row">
+    <select id="source-lang"></select>
+    <button class="swap-btn" id="swap-lang" title="언어 교환">⇄</button>
+    <select id="target-lang"></select>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <label for="input-text">입력</label>
+      <span class="meta"><span id="char-count">0</span> / 5000</span>
+    </div>
+    <textarea id="input-text" maxlength="5000" placeholder="번역할 텍스트를 입력하세요..."></textarea>
+    <div class="section-actions">
+      <button class="btn" id="clear-input">지우기</button>
+      <button class="btn" id="paste-input">붙여넣기</button>
+    </div>
+  </div>
+
+  <button class="translate-btn" id="translate-btn">번역하기</button>
+
+  <div class="reasoning-panel" id="reasoning-panel" style="display:none">
+    <button class="reasoning-toggle" id="reasoning-toggle">
+      <span>🧠 추론 과정</span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="reasoning-body" id="reasoning-text"></div>
+  </div>
+
+  <div class="section" style="margin-top:0.9rem">
+    <div class="section-header">
+      <label for="output-text">출력</label>
+      <span class="status-tag" id="status-tag"></span>
+    </div>
+    <div class="output-box" id="output-text"></div>
+    <div class="section-actions">
+      <button class="btn" id="copy-output">복사</button>
+      <button class="btn" id="save-history">기록 저장</button>
+    </div>
+  </div>
+
+  <footer>nevaeh5379.github.io</footer>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Overlay -->
+  <div class="overlay" id="overlay"></div>
+
+  <!-- Settings Modal -->
+  <div class="modal" id="settings-modal">
+    <div class="modal-header">
+      <h2>설정</h2>
+      <button class="icon-btn" data-close="settings">✕</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="tab-btn active" data-tab="endpoints">엔드포인트</button>
+      <button class="tab-btn" data-tab="model">모델 설정</button>
+      <button class="tab-btn" data-tab="prompt">프롬프트</button>
+      <button class="tab-btn" data-tab="export">내보내기</button>
+    </div>
+    <div class="modal-body">
+      <!-- Endpoints tab -->
+      <div class="tab-pane active" data-pane="endpoints">
+        <div id="endpoint-list"></div>
+        <button class="btn add-endpoint" id="add-endpoint">+ 엔드포인트 추가</button>
+      </div>
+
+      <!-- Model settings tab -->
+      <div class="tab-pane" data-pane="model">
+        <label class="inline" style="margin-bottom:0.75rem">
+          <input type="checkbox" id="advanced-toggle"> 고급 모델 설정 사용
+        </label>
+        <div class="advanced-section disabled" id="advanced-section">
+          <div class="range-row">
+            <label>temperature</label>
+            <input type="range" min="0" max="2" step="0.05" data-key="advanced.temperature">
+            <span class="val" data-val="advanced.temperature"></span>
+          </div>
+          <div class="range-row">
+            <label>top_p</label>
+            <input type="range" min="0" max="1" step="0.01" data-key="advanced.top_p">
+            <span class="val" data-val="advanced.top_p"></span>
+          </div>
+          <div class="range-row">
+            <label>top_k</label>
+            <input type="range" min="1" max="100" step="1" data-key="advanced.top_k">
+            <span class="val" data-val="advanced.top_k"></span>
+          </div>
+          <div class="range-row">
+            <label>repeat_penalty</label>
+            <input type="range" min="0.5" max="2" step="0.05" data-key="advanced.repeat_penalty">
+            <span class="val" data-val="advanced.repeat_penalty"></span>
+          </div>
+          <div class="range-row">
+            <label>presence_penalty</label>
+            <input type="range" min="-2" max="2" step="0.1" data-key="advanced.presence_penalty">
+            <span class="val" data-val="advanced.presence_penalty"></span>
+          </div>
+          <div class="range-row">
+            <label>frequency_penalty</label>
+            <input type="range" min="-2" max="2" step="0.1" data-key="advanced.frequency_penalty">
+            <span class="val" data-val="advanced.frequency_penalty"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prompt tab -->
+      <div class="tab-pane" data-pane="prompt">
+        <div class="form-group">
+          <label>시스템 프롬프트</label>
+          <textarea id="system-prompt"></textarea>
+        </div>
+        <div class="form-group">
+          <label>유저 프롬프트</label>
+          <textarea id="user-prompt"></textarea>
+          <div class="hint">플레이스홀더: {source_lang} {target_lang} {text}</div>
+        </div>
+        <button class="btn" id="reset-prompts">기본값으로 복원</button>
+      </div>
+
+      <!-- Export tab -->
+      <div class="tab-pane" data-pane="export">
+        <p class="desc">설정을 JSON 파일로 백업하거나 복원합니다. API 키가 포함되니 주의하세요.</p>
+        <div class="section-actions">
+          <button class="btn" id="export-settings">설정 내보내기</button>
+          <button class="btn" id="import-settings">설정 가져오기</button>
+          <input type="file" id="import-file" accept="application/json" hidden>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" data-close="settings">취소</button>
+      <button class="btn btn-primary" id="save-settings">저장</button>
+    </div>
+  </div>
+
+  <!-- History Sidebar -->
+  <div class="sidebar" id="history-sidebar">
+    <div class="sidebar-header">
+      <h2>번역 기록</h2>
+      <button class="icon-btn" data-close="history">✕</button>
+    </div>
+    <div class="sidebar-search">
+      <input type="text" id="history-search" class="controls" placeholder="검색..." style="width:100%;margin-bottom:0.5rem">
+    </div>
+    <div class="sidebar-list" id="history-list"></div>
+    <div class="sidebar-footer">
+      <button class="btn btn-danger" id="clear-history" style="width:100%">모든 기록 삭제</button>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
