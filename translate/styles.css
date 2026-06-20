@@ -2,7 +2,7 @@
 
 body {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-  max-width: 800px;
+  max-width: 1040px;
   margin: 0 auto;
   padding: 0 1rem 2rem;
   background: #fff;
@@ -59,6 +59,20 @@ select:focus, input:focus, textarea:focus { outline: none; border-color: #111; }
 .section-header label { margin-bottom: 0; }
 .section-header .meta { font-size: 0.8rem; color: #888; }
 .section-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+
+.workspace {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+.workspace .section { margin-bottom: 0; display: flex; flex-direction: column; }
+.workspace .section-header { margin-bottom: 0.25rem; }
+.workspace textarea,
+.workspace .output-box { flex: 1; min-height: 320px; }
+.workspace .section-actions { margin-top: 0.5rem; }
+
+.translate-btn { margin-top: 1rem; }
 
 button {
   font-family: inherit;
@@ -280,4 +294,7 @@ footer {
   .controls > * { width: 100%; }
   .endpoint-card .row { grid-template-columns: 1fr; }
   .range-row { grid-template-columns: 100px 1fr 40px; }
+  .workspace { grid-template-columns: 1fr; }
+  .workspace textarea,
+  .workspace .output-box { min-height: 200px; }
 }
