@@ -106,7 +106,7 @@ function bindEvents() {
   el.translateBtn.addEventListener('click', onTranslateClick);
   el.copyOutput.addEventListener('click', copyOutput);
   el.saveHistory.addEventListener('click', saveToHistory);
-  el.reasoningToggle.addEventListener('click', () => el.reasoningPanel.classList.toggle('open'));
+  // 추론 패널은 <details>가 자체 토글. JS는 열림 상태만 유지.
 
   // Settings modal
   el.settingsBtn.addEventListener('click', openSettings);
@@ -292,23 +292,21 @@ function setTranslating(v) {
 // ===== Reasoning panel =====
 function resetReasoningPanel() {
   el.reasoningPanel.style.display = 'none';
-  el.reasoningPanel.classList.remove('open');
+  el.reasoningPanel.open = false;
   el.reasoningText.textContent = '';
 }
 
 function showReasoning(text) {
   if (el.reasoningPanel.style.display === 'none') {
     el.reasoningPanel.style.display = 'block';
-    el.reasoningPanel.classList.add('open');
+    el.reasoningPanel.open = true;
   }
   el.reasoningText.textContent += text;
-  el.reasoningText.innerHTML = escapeHtml(el.reasoningText.textContent) + '<span class="cursor">▋</span>';
   el.reasoningText.scrollTop = el.reasoningText.scrollHeight;
 }
 
 function finalizeReasoning(text) {
   el.reasoningText.textContent = text;
-  el.reasoningText.textContent = text; // remove cursor
 }
 
 // ===== Copy / Save =====
