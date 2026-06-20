@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Base64 변환기</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 1rem 2rem;
+      background: #fff;
+      color: #111;
+      line-height: 1.7;
+      word-break: keep-all;
+    }
+
+    header {
+      border-bottom: 2px solid #111;
+      padding: 0.75rem 0;
+      margin-bottom: 1.5rem;
+    }
+    header a { color: #111; text-decoration: none; font-weight: bold; }
+
+    h1 { margin-bottom: 0.25rem; }
+    p.desc { color: #888; margin-top: 0; margin-bottom: 1.5rem; font-size: 0.9rem; }
+
+    label { display: block; font-weight: bold; margin-bottom: 0.25rem; }
+
+    textarea {
+      width: 100%;
+      height: 220px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.9rem;
+      border: 1px solid #ccc;
+      padding: 0.75rem;
+      resize: vertical;
+      background: #fff;
+      color: #111;
+      line-height: 1.6;
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+
+    .section { margin-bottom: 1rem; }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem 1.5rem;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .mode-group {
+      display: flex;
+      gap: 0.75rem;
+    }
+    .mode-group label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-weight: normal;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .options-group {
+      display: flex;
+      gap: 1rem;
+    }
+    .options-group label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-weight: normal;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .file-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .file-group label {
+      margin: 0;
+      font-weight: normal;
+      cursor: pointer;
+    }
+    #file-name {
+      font-size: 0.85rem;
+      color: #888;
+    }
+    input[type="file"] { font-size: 0.85rem; }
+
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    button {
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.4rem 1rem;
+      background: #fff;
+      color: #111;
+      border: 1px solid #111;
+      cursor: pointer;
+    }
+    button:hover { background: #111; color: #fff; }
+    button:active { opacity: 0.8; }
+
+    #copy-status {
+      font-size: 0.85rem;
+      color: #888;
+      align-self: center;
+    }
+
+    footer {
+      border-top: 1px solid #ccc;
+      margin-top: 3rem;
+      padding-top: 0.5rem;
+      font-size: 0.8rem;
+      color: #888;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body { background: #1a1a1a; color: #ddd; }
+      header { border-bottom-color: #ddd; }
+      header a { color: #ddd; }
+      textarea { background: #252525; color: #ddd; border-color: #444; }
+      button { background: #1a1a1a; color: #ddd; border-color: #aaa; }
+      button:hover { background: #ddd; color: #1a1a1a; }
+      footer { border-top-color: #444; color: #666; }
+      #copy-status { color: #666; }
+      #file-name { color: #666; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Base64 변환기</h1>
+    <p class="desc">텍스트와 Base64를 양방향으로 변환합니다. 자동 감지 모드에서는 입력값이 Base64면 디코딩, 아니면 인코딩합니다.</p>
+
+    <div class="controls">
+      <div class="mode-group">
+        <label><input type="radio" name="mode" value="encode"> 인코딩</label>
+        <label><input type="radio" name="mode" value="decode"> 디코딩</label>
+        <label><input type="radio" name="mode" value="auto" checked> 자동 감지</label>
+      </div>
+      <div class="options-group">
+        <label><input type="checkbox" id="urlsafe"> URL-safe base64 (<code>+→-</code> <code>/→_</code>)</label>
+      </div>
+      <div class="file-group">
+        <label for="file-input">파일 업로드:</label>
+        <input type="file" id="file-input">
+        <span id="file-name"></span>
+      </div>
+    </div>
+
+    <div class="section">
+      <label for="input">입력</label>
+      <textarea id="input" placeholder="여기에 텍스트 또는 Base64를 붙여넣으세요..."></textarea>
+    </div>
+
+    <div class="section">
+      <label for="output">출력</label>
+      <textarea id="output" readonly></textarea>
+      <div class="actions">
+        <button id="copy-btn">복사</button>
+        <span id="copy-status"></span>
+      </div>
+    </div>
+  </main>
+  <footer>nevaeh5379.github.io</footer>
+
+  <script>
+    const input = document.getElementById('input');
+    const output = document.getElementById('output');
+    const copyBtn = document.getElementById('copy-btn');
+    const copyStatus = document.getElementById('copy-status');
+    const urlsafeCheck = document.getElementById('urlsafe');
+    const fileInput = document.getElementById('file-input');
+    const fileName = document.getElementById('file-name');
+
+    function bytesToBase64(bytes) {
+      let bin = '';
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+      }
+      return btoa(bin);
+    }
+
+    function base64ToBytes(b64) {
+      const bin = atob(b64);
+      const len = bin.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes;
+    }
+
+    function encodeText(text) {
+      const bytes = new TextEncoder().encode(text);
+      let b64 = bytesToBase64(bytes);
+      if (urlsafeCheck.checked) {
+        b64 = b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      }
+      return b64;
+    }
+
+    function decodeText(b64) {
+      let s = b64.trim();
+      if (s.indexOf('-') >= 0 || s.indexOf('_') >= 0) {
+        s = s.replace(/-/g, '+').replace(/_/g, '/');
+      }
+      const pad = s.length % 4;
+      if (pad === 2) s += '==';
+      else if (pad === 3) s += '=';
+      else if (pad === 1) throw new Error('invalid length');
+      const bytes = base64ToBytes(s);
+      return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    }
+
+    function looksLikeBase64(text) {
+      const s = text.trim();
+      if (!s) return false;
+      if (s.length % 4 !== 0 && s.indexOf('=') === -1 && s.indexOf('-') === -1 && s.indexOf('_') === -1) {
+        return false;
+      }
+      return /^[A-Za-z0-9+/_-]*={0,2}$/.test(s);
+    }
+
+    function getMode() {
+      const checked = document.querySelector('input[name="mode"]:checked');
+      return checked ? checked.value : 'auto';
+    }
+
+    function convert() {
+      const text = input.value;
+      if (!text) { output.value = ''; return; }
+      const mode = getMode();
+      try {
+        if (mode === 'encode') {
+          output.value = encodeText(text);
+        } else if (mode === 'decode') {
+          output.value = decodeText(text);
+        } else {
+          if (looksLikeBase64(text)) {
+            try {
+              output.value = decodeText(text);
+            } catch (e) {
+              output.value = encodeText(text);
+            }
+          } else {
+            output.value = encodeText(text);
+          }
+        }
+      } catch (e) {
+        output.value = '오류: ' + e.message;
+      }
+    }
+
+    input.addEventListener('input', convert);
+    document.querySelectorAll('input[name="mode"]').forEach(el => el.addEventListener('change', convert));
+    urlsafeCheck.addEventListener('change', convert);
+
+    copyBtn.addEventListener('click', () => {
+      if (!output.value) return;
+      navigator.clipboard.writeText(output.value).then(() => {
+        copyStatus.textContent = '복사됨';
+        setTimeout(() => { copyStatus.textContent = ''; }, 1500);
+      });
+    });
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (!file) { fileName.textContent = ''; return; }
+      fileName.textContent = file.name + ' (' + file.size + ' bytes)';
+      const reader = new FileReader();
+      reader.onload = () => {
+        let dataUrl = reader.result;
+        const comma = dataUrl.indexOf(',');
+        let b64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+        input.value = b64;
+        convert();
+      };
+      reader.readAsDataURL(file);
+    });
+  </script>
+</body>
+</html>

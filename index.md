@@ -5,6 +5,7 @@ title: Home
 
 # 편의 기능 목록
 - [Remove Star](./removestar/)
+- [Base64 변환기](./base64/)
 
 # 글 목록
 {% for post in site.posts %}
