@@ -27,7 +27,6 @@ const el = {
   outputText: $('output-text'),
   statusTag: $('status-tag'),
   copyOutput: $('copy-output'),
-  saveHistory: $('save-history'),
   reasoningPanel: $('reasoning-panel'),
   reasoningToggle: $('reasoning-toggle'),
   reasoningText: $('reasoning-text'),
@@ -108,7 +107,6 @@ function bindEvents() {
   el.pasteInput.addEventListener('click', pasteFromClipboard);
   el.translateBtn.addEventListener('click', onTranslateClick);
   el.copyOutput.addEventListener('click', copyOutput);
-  el.saveHistory.addEventListener('click', saveToHistory);
   // 추론 패널은 <details>가 자체 토글. JS는 열림 상태만 유지.
 
   // Settings modal
@@ -265,7 +263,12 @@ async function translate() {
     }
     el.statusTag.textContent = '완료';
     el.statusTag.className = 'status-tag done';
-    lastTranslation = { sourceLang, targetLang, sourceText: text, targetText: outText, endpoint: ep.name, model: cfg.model };
+    lastTranslation = { sourceLang, targetLang, sourceText: text, targetText: outText, endpoint: ep.name, model: cfg.model, reasoning: el.reasoningText.textContent || '' };
+    if (outText) {
+      const saved = history.add(lastTranslation);
+      lastTranslation.savedId = saved.id;
+      renderHistory();
+    }
   } catch (e) {
     if (e.name === 'AbortError') {
       el.statusTag.textContent = '중단됨';
@@ -320,10 +323,11 @@ async function copyOutput() {
 }
 
 function saveToHistory() {
-  if (!lastTranslation || !lastTranslation.targetText) { toast('저장할 번역이 없습니다'); return; }
-  history.add(lastTranslation);
+  if (!lastTranslation || !lastTranslation.targetText) return;
+  if (lastTranslation.savedId) return;
+  const saved = history.add(lastTranslation);
+  lastTranslation.savedId = saved.id;
   renderHistory();
-  toast('기록에 저장됨');
 }
 
 // ===== Settings modal =====
@@ -462,7 +466,7 @@ function renderHistory(query = '') {
         <span>${history.formatTimeAgo(i.timestamp)}</span>
       </div>
       <div class="text">${escapeHtml(i.sourceText || '')}</div>
-      <div class="text" style="color:var(--text-soft)">${escapeHtml(i.targetText || '')}</div>
+      <div class="text soft">${escapeHtml(i.targetText || '')}</div>
       <span class="del" data-del="${i.id}">🗑</span>
     </div>
   `).join('');
