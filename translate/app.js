@@ -276,7 +276,8 @@ async function translate() {
     } else {
       el.statusTag.textContent = '오류';
       el.statusTag.className = 'status-tag error';
-      el.outputText.textContent = '오류: ' + e.message;
+      el.outputText.textContent = '';
+      toast('오류: ' + e.message);
     }
   } finally {
     setTranslating(false);
