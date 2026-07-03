@@ -234,22 +234,13 @@ async function translate() {
 
   try {
     if (settings.data.stream) {
-      let lastContentLen = 0;
-      let lastReasoningLen = 0;
       await provider.translateStream(messages, {
-        onContent: (chunk) => {
-          if (cfg.advanced) {
-            // 인라인 태그 모드: chunk가 전체 sep.content일 수 있음 → 증분 계산
-            const cur = chunk;
-            if (cur.length > lastContentLen) {
-              el.outputText.textContent = cur;
-              lastContentLen = cur.length;
-            }
-          } else {
-            el.outputText.textContent += chunk;
-          }
+        onContent: (chunk, full) => {
+          el.outputText.textContent = full;
         },
-        onReasoning: (chunk) => { showReasoning(chunk); },
+        onReasoning: (chunk, full) => {
+          showReasoning(full, true);
+        },
         onContentFinal: (full) => { el.outputText.textContent = full; },
         onReasoningFinal: (full) => { if (full) finalizeReasoning(full); },
         onDone: () => {},
@@ -303,12 +294,16 @@ function resetReasoningPanel() {
   el.reasoningText.textContent = '';
 }
 
-function showReasoning(text) {
+function showReasoning(text, replace = false) {
   if (el.reasoningPanel.style.display === 'none') {
     el.reasoningPanel.style.display = 'block';
     el.reasoningPanel.open = true;
   }
-  el.reasoningText.textContent += text;
+  if (replace) {
+    el.reasoningText.textContent = text;
+  } else {
+    el.reasoningText.textContent += text;
+  }
   el.reasoningText.scrollTop = el.reasoningText.scrollHeight;
 }
 

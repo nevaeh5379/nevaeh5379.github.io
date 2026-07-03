@@ -32,27 +32,31 @@
     <div class="section input-col">
       <div class="section-header">
         <label for="input-text">입력</label>
-        <span class="meta"><span id="char-count">0</span>자</span>
+        <div class="section-tools-wrap">
+          <span class="meta"><span id="char-count">0</span>자</span>
+          <div class="io-tools">
+            <button class="icon-btn" id="clear-input" title="지우기" aria-label="지우기">✕</button>
+            <button class="icon-btn" id="paste-input" title="붙여넣기" aria-label="붙여넣기">⎘</button>
+          </div>
+        </div>
       </div>
       <div class="io-wrap">
         <textarea id="input-text" placeholder="번역할 텍스트를 입력하세요..."></textarea>
-        <div class="io-tools">
-          <button class="icon-btn" id="clear-input" title="지우기" aria-label="지우기">✕</button>
-          <button class="icon-btn" id="paste-input" title="붙여넣기" aria-label="붙여넣기">⎘</button>
-        </div>
       </div>
     </div>
 
     <div class="section output-col">
       <div class="section-header">
         <label for="output-text">출력</label>
-        <span class="status-tag" id="status-tag"></span>
+        <div class="section-tools-wrap">
+          <span class="status-tag" id="status-tag"></span>
+          <div class="io-tools">
+            <button class="icon-btn" id="copy-output" title="복사" aria-label="복사">⧉</button>
+          </div>
+        </div>
       </div>
       <div class="io-wrap">
         <div class="output-box" id="output-text"></div>
-        <div class="io-tools">
-          <button class="icon-btn" id="copy-output" title="복사" aria-label="복사">⧉</button>
-        </div>
       </div>
     </div>
   </div>

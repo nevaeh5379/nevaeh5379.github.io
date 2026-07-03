@@ -68,17 +68,19 @@ select:focus, input:focus, textarea:focus { outline: none; border-color: #111; }
 }
 .workspace .section { margin-bottom: 0; display: flex; flex-direction: column; }
 .workspace .section-header { margin-bottom: 0.25rem; }
+.section-tools-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
 
-.io-wrap { position: relative; flex: 1; display: flex; }
+.io-wrap { flex: 1; display: flex; }
 .io-wrap textarea,
 .io-wrap .output-box { flex: 1; min-height: 320px; }
 .io-tools {
-  position: absolute;
-  top: 0.3rem;
-  right: 0.3rem;
   display: flex;
+  align-items: center;
   gap: 0.25rem;
-  z-index: 2;
 }
 .icon-btn {
   width: 1.8rem;

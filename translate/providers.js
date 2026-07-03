@@ -185,18 +185,23 @@ export class OpenAICompatibleProvider {
     const handleDelta = (delta) => {
       if (delta.reasoning_content != null) {
         sawReasoningField = true;
-        if (delta.reasoning_content) { reasoningBuffer += delta.reasoning_content; callbacks.onReasoning?.(delta.reasoning_content); }
+        if (delta.reasoning_content) {
+          reasoningBuffer += delta.reasoning_content;
+          callbacks.onReasoning?.(delta.reasoning_content, reasoningBuffer);
+        }
       }
       if (delta.content != null) {
         if (sawReasoningField) {
-          if (delta.content) { contentBuffer += delta.content; callbacks.onContent?.(delta.content); }
+          if (delta.content) {
+            contentBuffer += delta.content;
+            callbacks.onContent?.(delta.content, contentBuffer);
+          }
         } else {
           // 인라인 태그 가능: 누적 후 분리
           contentBuffer += delta.content || '';
           const sep = separateThinking(contentBuffer);
-          // 증분만 전달: 마지막으로 전달한 content/reasoning 기준
-          callbacks.onContent?.(sep.content);
-          if (sep.reasoning) callbacks.onReasoning?.(sep.reasoning);
+          callbacks.onContent?.(delta.content, sep.content);
+          if (sep.reasoning) callbacks.onReasoning?.('', sep.reasoning);
         }
       }
     };
@@ -207,8 +212,7 @@ export class OpenAICompatibleProvider {
       if (delta) handleDelta(delta);
       // Ollama 호환: message.content
       else if (obj.message?.content != null) {
-        contentBuffer += obj.message.content;
-        callbacks.onContent?.(obj.message.content);
+        handleDelta({ content: obj.message.content });
       }
       // 완료 신호
       if (obj.choices?.[0]?.finish_reason) callbacks.onDone?.();
