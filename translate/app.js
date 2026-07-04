@@ -16,6 +16,8 @@ const el = {
   modelSelect: $('model-select'),
   refreshModels: $('refresh-models'),
   streamToggle: $('stream-toggle'),
+  autoHeightToggle: $('auto-height-toggle'),
+  markdownToggle: $('markdown-toggle'),
   sourceLang: $('source-lang'),
   targetLang: $('target-lang'),
   swapLang: $('swap-lang'),
@@ -59,6 +61,7 @@ let isTranslating = false;
 let abortController = null;
 let lastTranslation = null;
 let fetchedModels = []; // 현재 선택된 엔드포인트의 모델 목록
+let currentOutputText = ''; // 현재 번역된 원본 텍스트
 
 // ===== Init =====
 function init() {
@@ -99,11 +102,19 @@ function bindEvents() {
   });
   el.refreshModels.addEventListener('click', refreshModels);
   el.streamToggle.addEventListener('change', () => { settings.set('stream', el.streamToggle.checked); });
+  el.autoHeightToggle.addEventListener('change', () => {
+    settings.set('autoHeight', el.autoHeightToggle.checked);
+    adjustHeights();
+  });
+  el.markdownToggle.addEventListener('change', () => {
+    settings.set('markdown', el.markdownToggle.checked);
+    updateOutputDisplay();
+  });
   el.sourceLang.addEventListener('change', () => { settings.set('sourceLang', el.sourceLang.value); });
   el.targetLang.addEventListener('change', () => { settings.set('targetLang', el.targetLang.value); });
   el.swapLang.addEventListener('click', swapLanguages);
-  el.inputText.addEventListener('input', updateCharCount);
-  el.clearInput.addEventListener('click', () => { el.inputText.value = ''; updateCharCount(); el.inputText.focus(); });
+  el.inputText.addEventListener('input', () => { updateCharCount(); adjustHeights(); });
+  el.clearInput.addEventListener('click', () => { el.inputText.value = ''; updateCharCount(); adjustHeights(); el.inputText.focus(); });
   el.pasteInput.addEventListener('click', pasteFromClipboard);
   el.translateBtn.addEventListener('click', onTranslateClick);
   el.copyOutput.addEventListener('click', copyOutput);
@@ -150,6 +161,7 @@ async function pasteFromClipboard() {
     const text = await navigator.clipboard.readText();
     el.inputText.value = text;
     updateCharCount();
+    adjustHeights();
   } catch (e) { toast('클립보드 접근 실패'); }
 }
 
@@ -161,8 +173,9 @@ function swapLanguages() {
   settings.set('sourceLang', t);
   settings.set('targetLang', s);
   const inText = el.inputText.value;
-  el.inputText.value = el.outputText.textContent;
-  el.outputText.textContent = inText;
+  el.inputText.value = currentOutputText;
+  currentOutputText = inText;
+  updateOutputDisplay();
   updateCharCount();
 }
 
@@ -222,7 +235,8 @@ async function translate() {
   ];
 
   setTranslating(true);
-  el.outputText.textContent = '';
+  currentOutputText = '';
+  updateOutputDisplay();
   el.statusTag.textContent = '번역 중...';
   el.statusTag.className = 'status-tag streaming';
   resetReasoningPanel();
@@ -230,25 +244,29 @@ async function translate() {
 
   const provider = new OpenAICompatibleProvider(cfg);
   let outText = '';
-  let reasoningText = '';
 
   try {
     if (settings.data.stream) {
       await provider.translateStream(messages, {
         onContent: (chunk, full) => {
-          el.outputText.textContent = full;
+          currentOutputText = full;
+          updateOutputDisplay();
         },
         onReasoning: (chunk, full) => {
           showReasoning(full, true);
         },
-        onContentFinal: (full) => { el.outputText.textContent = full; },
+        onContentFinal: (full) => {
+          currentOutputText = full;
+          updateOutputDisplay();
+        },
         onReasoningFinal: (full) => { if (full) finalizeReasoning(full); },
         onDone: () => {},
       }, { signal: abortController.signal, advanced: !!cfg.advanced });
-      outText = el.outputText.textContent;
+      outText = currentOutputText;
     } else {
       const r = await provider.translate(messages, { signal: abortController.signal, advanced: !!cfg.advanced });
-      el.outputText.textContent = r.content;
+      currentOutputText = r.content;
+      updateOutputDisplay();
       outText = r.content;
       if (r.reasoning) { showReasoning(r.reasoning); finalizeReasoning(r.reasoning); }
     }
@@ -267,7 +285,8 @@ async function translate() {
     } else {
       el.statusTag.textContent = '오류';
       el.statusTag.className = 'status-tag error';
-      el.outputText.textContent = '';
+      currentOutputText = '';
+      updateOutputDisplay();
       toast('오류: ' + e.message);
     }
   } finally {
@@ -285,6 +304,33 @@ function setTranslating(v) {
     el.translateBtn.textContent = '번역하기';
     el.translateBtn.classList.remove('stop');
   }
+}
+
+// ===== UI Display & Sizing =====
+function updateOutputDisplay() {
+  if (settings.data.markdown && window.marked) {
+    el.outputText.innerHTML = window.marked.parse(currentOutputText || '');
+  } else {
+    el.outputText.textContent = currentOutputText || '';
+  }
+  adjustHeights();
+}
+
+function adjustHeights() {
+  const auto = !!settings.data.autoHeight;
+  if (!auto) {
+    el.inputText.style.height = '';
+    el.outputText.style.height = '';
+    el.outputText.style.overflowY = '';
+    return;
+  }
+  // Reset input textarea height first to get accurate scrollHeight
+  el.inputText.style.height = 'auto';
+  el.inputText.style.height = el.inputText.scrollHeight + 'px';
+
+  // Allow output box to expand naturally
+  el.outputText.style.height = 'auto';
+  el.outputText.style.overflowY = 'visible';
 }
 
 // ===== Reasoning panel =====
@@ -418,7 +464,10 @@ function applySettingsToMain() {
   el.sourceLang.value = settings.data.sourceLang;
   el.targetLang.value = settings.data.targetLang;
   el.endpointSelect.value = settings.data.endpointId;
+  el.autoHeightToggle.checked = !!settings.data.autoHeight;
+  el.markdownToggle.checked = !!settings.data.markdown;
   populateModelSelect();
+  adjustHeights();
 }
 
 function toggleAdvancedUI(on) {
@@ -481,7 +530,8 @@ function loadFromHistory(id) {
   const item = history.get(id);
   if (!item) return;
   el.inputText.value = item.sourceText || '';
-  el.outputText.textContent = item.targetText || '';
+  currentOutputText = item.targetText || '';
+  updateOutputDisplay();
   el.sourceLang.value = item.sourceLang;
   el.targetLang.value = item.targetLang;
   updateCharCount();

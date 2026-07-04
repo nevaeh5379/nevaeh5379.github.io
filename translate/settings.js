@@ -15,6 +15,8 @@ const DEFAULTS = {
   sourceLang: 'auto',
   targetLang: 'en',
   stream: true,
+  autoHeight: false,
+  markdown: false,
   enableAdvanced: false,
   endpoints: [...DEFAULT_ENDPOINTS],
   advanced: {

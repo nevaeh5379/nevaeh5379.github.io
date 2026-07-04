@@ -43,6 +43,13 @@ textarea, .output-box {
 }
 .output-box { overflow-y: auto; }
 .output-box:empty::before { content: '번역 결과가 여기에 표시됩니다...'; color: #aaa; }
+.output-box p { margin: 0 0 0.5rem; }
+.output-box p:last-child { margin-bottom: 0; }
+.output-box h1, .output-box h2, .output-box h3, .output-box h4 { margin: 0.8rem 0 0.4rem; line-height: 1.3; }
+.output-box ul, .output-box ol { margin: 0 0 0.5rem; padding-left: 1.2rem; }
+.output-box li { margin-bottom: 0.2rem; }
+.output-box pre { background: #f4f4f4; padding: 0.5rem; overflow-x: auto; border: 1px solid #ddd; margin: 0.5rem 0; font-family: monospace; }
+.output-box code { background: #f4f4f4; padding: 0.1rem 0.3rem; font-family: monospace; font-size: 0.85em; }
 
 select, input[type="text"], input[type="password"] {
   font-family: inherit;
@@ -272,6 +279,8 @@ footer {
   p.desc { color: #888; }
   textarea, .output-box { background: #252525; color: #ddd; border-color: #444; }
   .output-box:empty::before { color: #666; }
+  .output-box pre { background: #2d2d2d; border-color: #444; }
+  .output-box code { background: #2d2d2d; }
   .icon-btn { background: #252525; color: #ddd; border-color: #444; }
   .icon-btn:hover { background: #ddd; color: #1a1a1a; border-color: #ddd; }
   select, input[type="text"], input[type="password"] { background: #252525; color: #ddd; border-color: #444; }
