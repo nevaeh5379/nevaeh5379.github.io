@@ -7,6 +7,7 @@ title: Home
 - [Remove Star](./removestar/)
 - [Base64 변환기](./base64/)
 - [LLM 번역기](./translate/)
+- [이름 생성기](./createname/)
 
 # 글 목록
 {% for post in site.posts %}
